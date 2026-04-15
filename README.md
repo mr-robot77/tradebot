@@ -1,16 +1,26 @@
+---
+title: Tradebot Backtest Dashboard
+emoji: 🤖
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 <div align="center">
   <h1>🤖 tradebot</h1>
   <p>
     An automated cryptocurrency trading bot with eight built-in strategies,
     built with the
     <a href="https://github.com/coding-kitties/investing-algorithm-framework">investing-algorithm-framework v8</a>
-    and a public interactive backtest dashboard deployable to Hugging Face Spaces in minutes.
+    and a public interactive backtest dashboard hosted on Hugging Face Spaces.
   </p>
   <p>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python">
     <img src="https://img.shields.io/badge/Exchanges-Binance%20%7C%20Kraken%20%7C%20Bitvavo%20%7C%20more-orange?style=flat-square" alt="Exchanges">
     <img src="https://img.shields.io/badge/Strategies-8-green?style=flat-square" alt="Strategies">
-    <img src="https://img.shields.io/badge/Deploy-HuggingFace%20%7C%20Render%20%7C%20Railway-0078D4?style=flat-square" alt="Deploy">
+    <img src="https://img.shields.io/badge/Dashboard-HuggingFace%20Spaces-yellow?style=flat-square&logo=huggingface" alt="HuggingFace Spaces">
   </p>
 </div>
 
@@ -620,35 +630,4 @@ backtest in their browser — no Python or API keys required.
 pip install -r requirements-dashboard.txt
 python backtest_dashboard.py      # → http://127.0.0.1:8050
 ```
-
-### Deploy to Hugging Face Spaces (Free, Docker)
-
-A `Dockerfile` is included in the repo. HF Spaces runs it automatically.
-
-**Steps (≈ 5 minutes):**
-
-1. Sign up for free at **[huggingface.co](https://huggingface.co)** — GitHub login works.
-2. Go to **[huggingface.co/spaces](https://huggingface.co/spaces)** → **New Space**.
-3. Set **SDK: Docker** and pick a name (e.g. `tradebot-backtest`).
-4. In **Files**, connect or push the `mr-robot77/tradebot` repository.
-5. HF builds the `Dockerfile` automatically and starts the app on port 7860.
-6. Your dashboard is live at `https://huggingface.co/spaces/<your-username>/tradebot-backtest`.
-
-> The free CPU tier is always-on and has no sleep timeout.
-
-### Deploy to Render (Free)
-
-`render.yaml` is already in the repo — Render reads it automatically.
-
-1. Sign up at **[render.com](https://render.com)** → **New → Web Service**.
-2. Connect the `mr-robot77/tradebot` repository.
-3. Render deploys automatically. Your URL: `https://tradebot-dashboard.onrender.com`.
-
-### Deploy to Railway (Free)
-
-`Procfile` is already in the repo.
-
-1. Sign up at **[railway.app](https://railway.app)** → **New Project → Deploy from GitHub repo**.
-2. Add env var `NIXPACKS_INSTALL_CMD=pip install -r requirements-dashboard.txt`.
-3. Start command: `gunicorn backtest_dashboard:server --bind 0.0.0.0:$PORT --workers 1 --timeout 120`.
 
