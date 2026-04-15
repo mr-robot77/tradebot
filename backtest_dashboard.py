@@ -1,9 +1,9 @@
 """
 Interactive public backtest dashboard for tradebot.
 
-Lets any visitor choose a trading strategy, ticker, date range, timeframe,
-and initial balance, click "Run Backtest", and instantly see:
-  - Equity curve (Plotly interactive chart)
+Lets any visitor choose a trading strategy, ticker, exchange, date range,
+timeframe, and initial balance, click "Run Backtest", and instantly see:
+  - Equity curve (Plotly interactive chart with dark template)
   - Performance KPIs: total return, Sharpe ratio, max drawdown, win rate
   - Monthly returns heatmap
   - Full annotated trades table
@@ -14,7 +14,7 @@ Indicators are computed with pandas-ta (pure Python, no C extensions).
 Usage:
     pip install -r requirements-dashboard.txt
     python backtest_dashboard.py          # http://127.0.0.1:8050
-    PORT=8080 python backtest_dashboard.py
+    PORT=7860 python backtest_dashboard.py
 """
 
 import math
@@ -40,6 +40,9 @@ STRATEGIES = [
     "MACD Signal Cross",
     "Bollinger Bands",
     "EMA Crossover",
+    "Stochastic Oscillator",
+    "CCI Reversion",
+    "Williams %R",
 ]
 
 # Per-strategy: human description + 3 configurable parameters (p3 may be None)
@@ -52,8 +55,8 @@ _S = {
     },
     "RSI Reversion": {
         "desc": "Buy: RSI falls below Oversold threshold  ·  Sell: RSI rises above Overbought threshold",
-        "p1": ("RSI Period",         14),
-        "p2": ("Oversold Threshold", 30),
+        "p1": ("RSI Period",           14),
+        "p2": ("Oversold Threshold",   30),
         "p3": ("Overbought Threshold", 70),
     },
     "MACD Signal Cross": {
@@ -74,13 +77,91 @@ _S = {
         "p2": ("Slow EMA Period", 21),
         "p3": None,
     },
+    "Stochastic Oscillator": {
+        "desc": "Buy: %K crosses above %D below Oversold  ·  Sell: %K crosses below %D above Overbought",
+        "p1": ("%K Period",           14),
+        "p2": ("Oversold Threshold",  20),
+        "p3": ("Overbought Threshold", 80),
+    },
+    "CCI Reversion": {
+        "desc": "Buy: CCI drops below -100 (oversold)  ·  Sell: CCI rises above +100 (overbought)",
+        "p1": ("CCI Period",          20),
+        "p2": ("Oversold Level",    -100),
+        "p3": ("Overbought Level",   100),
+    },
+    "Williams %R": {
+        "desc": "Buy: Williams %R drops below -80 (oversold)  ·  Sell: rises above -20 (overbought)",
+        "p1": ("Period",             14),
+        "p2": ("Oversold Level",    -80),
+        "p3": ("Overbought Level",  -20),
+    },
 }
 
-EXCHANGES  = ["binance", "kraken", "kucoin"]
+# ─────────────────────────────────────────────────── exchange catalogue ───── #
+
+EXCHANGES = [
+    {"label": "Binance",   "value": "binance"},
+    {"label": "Kraken",    "value": "kraken"},
+    {"label": "KuCoin",    "value": "kucoin"},
+    {"label": "Bybit",     "value": "bybit"},
+    {"label": "OKX",       "value": "okx"},
+    {"label": "Bitvavo",   "value": "bitvavo"},
+    {"label": "Bitfinex",  "value": "bitfinex"},
+    {"label": "Gate.io",   "value": "gateio"},
+]
+
 TIMEFRAMES = [
-    {"label": "1 Hour",  "value": "1h"},
-    {"label": "4 Hours", "value": "4h"},
-    {"label": "1 Day",   "value": "1d"},
+    {"label": "15 Minutes", "value": "15m"},
+    {"label": "1 Hour",     "value": "1h"},
+    {"label": "4 Hours",    "value": "4h"},
+    {"label": "1 Day",      "value": "1d"},
+    {"label": "1 Week",     "value": "1w"},
+]
+
+# ─────────────────────────────────────────────────── popular tickers ──────── #
+# Grouped by category for the searchable dropdown.
+# Users can also type any custom pair directly.
+
+TICKERS = [
+    # ── Major ──────────────────────────────────────────────────────────────
+    {"label": "BTC/USDT  — Bitcoin",         "value": "BTC/USDT"},
+    {"label": "ETH/USDT  — Ethereum",        "value": "ETH/USDT"},
+    {"label": "BNB/USDT  — BNB",             "value": "BNB/USDT"},
+    {"label": "SOL/USDT  — Solana",          "value": "SOL/USDT"},
+    {"label": "XRP/USDT  — XRP",             "value": "XRP/USDT"},
+    {"label": "ADA/USDT  — Cardano",         "value": "ADA/USDT"},
+    {"label": "AVAX/USDT — Avalanche",       "value": "AVAX/USDT"},
+    {"label": "DOT/USDT  — Polkadot",        "value": "DOT/USDT"},
+    {"label": "MATIC/USDT— Polygon",         "value": "MATIC/USDT"},
+    {"label": "LINK/USDT — Chainlink",       "value": "LINK/USDT"},
+    # ── Meme / Popular ─────────────────────────────────────────────────────
+    {"label": "DOGE/USDT — Dogecoin",        "value": "DOGE/USDT"},
+    {"label": "SHIB/USDT — Shiba Inu",       "value": "SHIB/USDT"},
+    {"label": "PEPE/USDT — Pepe",            "value": "PEPE/USDT"},
+    # ── DeFi ───────────────────────────────────────────────────────────────
+    {"label": "UNI/USDT  — Uniswap",         "value": "UNI/USDT"},
+    {"label": "AAVE/USDT — Aave",            "value": "AAVE/USDT"},
+    {"label": "CRV/USDT  — Curve",           "value": "CRV/USDT"},
+    {"label": "MKR/USDT  — Maker",           "value": "MKR/USDT"},
+    {"label": "COMP/USDT — Compound",        "value": "COMP/USDT"},
+    # ── Layer 1 / Layer 2 ──────────────────────────────────────────────────
+    {"label": "ATOM/USDT — Cosmos",          "value": "ATOM/USDT"},
+    {"label": "NEAR/USDT — NEAR Protocol",   "value": "NEAR/USDT"},
+    {"label": "FTM/USDT  — Fantom",          "value": "FTM/USDT"},
+    {"label": "ALGO/USDT — Algorand",        "value": "ALGO/USDT"},
+    {"label": "TRX/USDT  — TRON",            "value": "TRX/USDT"},
+    {"label": "LTC/USDT  — Litecoin",        "value": "LTC/USDT"},
+    {"label": "BCH/USDT  — Bitcoin Cash",    "value": "BCH/USDT"},
+    {"label": "XLM/USDT  — Stellar",         "value": "XLM/USDT"},
+    {"label": "VET/USDT  — VeChain",         "value": "VET/USDT"},
+    # ── EUR pairs (Bitvavo / Kraken) ────────────────────────────────────────
+    {"label": "BTC/EUR   — Bitcoin (EUR)",   "value": "BTC/EUR"},
+    {"label": "ETH/EUR   — Ethereum (EUR)",  "value": "ETH/EUR"},
+    {"label": "SOL/EUR   — Solana (EUR)",    "value": "SOL/EUR"},
+    # ── BTC pairs ──────────────────────────────────────────────────────────
+    {"label": "ETH/BTC   — ETH vs BTC",      "value": "ETH/BTC"},
+    {"label": "SOL/BTC   — SOL vs BTC",      "value": "SOL/BTC"},
+    {"label": "BNB/BTC   — BNB vs BTC",      "value": "BNB/BTC"},
 ]
 
 # ────────────────────────────────────────────────── colour palette ─────────── #
@@ -93,6 +174,8 @@ TEXT   = "#e6edf3"
 GREEN  = "#3fb950"
 RED    = "#f85149"
 MUTED  = "#8b949e"
+
+PLOTLY_TEMPLATE = "plotly_dark"
 
 # ───────────────────────────────────────────────── OHLCV fetching ─────────── #
 
@@ -161,7 +244,9 @@ def compute_signals(df: pd.DataFrame, strategy: str,
     p3 is ignored for strategies that only require two parameters.
     """
     close = df["close"]
-    sig = pd.Series(0, index=df.index, dtype=int)
+    high  = df["high"]
+    low   = df["low"]
+    sig   = pd.Series(0, index=df.index, dtype=int)
 
     if strategy == "Golden Cross / Death Cross":
         fast = ta.sma(close, length=int(p1))
@@ -193,6 +278,26 @@ def compute_signals(df: pd.DataFrame, strategy: str,
         slow = ta.ema(close, length=int(p2))
         sig[_xover(fast, slow)]  = 1
         sig[_xunder(fast, slow)] = -1
+
+    elif strategy == "Stochastic Oscillator":
+        stoch_df = ta.stoch(high, low, close, k=int(p1))
+        if stoch_df is not None and not stoch_df.empty:
+            pct_k = stoch_df.iloc[:, 0]
+            pct_d = stoch_df.iloc[:, 1]
+            bull = _xover(pct_k, pct_d) & (pct_k < float(p2))
+            bear = _xunder(pct_k, pct_d) & (pct_k > float(p3))
+            sig[bull] = 1
+            sig[bear] = -1
+
+    elif strategy == "CCI Reversion":
+        cci = ta.cci(high, low, close, length=int(p1))
+        sig[cci < float(p2)] = 1
+        sig[cci > float(p3)] = -1
+
+    elif strategy == "Williams %R":
+        wr = ta.willr(high, low, close, length=int(p1))
+        sig[wr < float(p2)] = 1
+        sig[wr > float(p3)] = -1
 
     return sig
 
@@ -319,6 +424,7 @@ def build_monthly_returns(equity: pd.Series) -> pd.DataFrame:
 def make_empty_fig(title: str = "") -> go.Figure:
     fig = go.Figure()
     fig.update_layout(
+        template=PLOTLY_TEMPLATE,
         paper_bgcolor=CARD, plot_bgcolor=CARD,
         font=dict(color=MUTED),
         title=dict(text=title, font=dict(color=MUTED, size=13)),
@@ -339,7 +445,7 @@ def make_equity_chart(equity: pd.Series, initial_balance: float,
         mode="lines", name=strategy_name,
         line=dict(color=ACCENT, width=2),
         fill="tozeroy",
-        fillcolor="rgba(31,111,178,0.08)",
+        fillcolor="rgba(31,111,178,0.10)",
         hovertemplate="%{x|%Y-%m-%d}<br>Portfolio: %{y:,.2f}<extra></extra>",
     ))
     fig.add_hline(
@@ -348,6 +454,7 @@ def make_equity_chart(equity: pd.Series, initial_balance: float,
         annotation_font_color=MUTED,
     )
     fig.update_layout(
+        template=PLOTLY_TEMPLATE,
         paper_bgcolor=CARD, plot_bgcolor=CARD,
         font=dict(color=TEXT, size=12),
         title=dict(text="Equity Curve", font=dict(size=14, color=TEXT)),
@@ -375,13 +482,14 @@ def make_monthly_heatmap(monthly_table: pd.DataFrame) -> go.Figure:
         y=[str(yr) for yr in monthly_table.index],
         text=text,
         texttemplate="%{text}",
-        colorscale=[[0, "#c0392b"], [0.5, "#ffffff"], [1, "#27ae60"]],
+        colorscale=[[0, "#c0392b"], [0.5, "#555555"], [1, "#27ae60"]],
         zmid=0,
         showscale=True,
         colorbar=dict(ticksuffix="%", tickfont=dict(color=TEXT)),
         hovertemplate="%{y} %{x}: %{z:.2f}%<extra></extra>",
     ))
     fig.update_layout(
+        template=PLOTLY_TEMPLATE,
         paper_bgcolor=CARD, plot_bgcolor=CARD,
         font=dict(color=TEXT, size=11),
         title=dict(text="Monthly Returns", font=dict(size=14, color=TEXT)),
@@ -393,10 +501,10 @@ def make_monthly_heatmap(monthly_table: pd.DataFrame) -> go.Figure:
 # ──────────────────────────────────────────────────── Dash layout ─────────── #
 
 _CARD = {
-    "background": CARD,
-    "border":     f"1px solid {BORDER}",
+    "background":   CARD,
+    "border":       f"1px solid {BORDER}",
     "borderRadius": "8px",
-    "padding":    "16px",
+    "padding":      "16px",
     "marginBottom": "16px",
 }
 _LBL = {
@@ -409,28 +517,33 @@ _LBL = {
     "marginTop":     "0",
 }
 _INP = {
-    "background":  "#21262d",
-    "border":      f"1px solid {BORDER}",
+    "background":   "#21262d",
+    "border":       f"1px solid {BORDER}",
     "borderRadius": "6px",
-    "color":       TEXT,
-    "width":       "100%",
-    "padding":     "6px 10px",
-    "fontSize":    "13px",
-    "boxSizing":   "border-box",
+    "color":        TEXT,
+    "width":        "100%",
+    "padding":      "6px 10px",
+    "fontSize":     "13px",
+    "boxSizing":    "border-box",
 }
 _BTN = {
-    "background":  ACCENT,
-    "border":      "none",
+    "background":   ACCENT,
+    "border":       "none",
     "borderRadius": "6px",
-    "color":       "white",
-    "cursor":      "pointer",
-    "fontSize":    "14px",
-    "fontWeight":  "600",
-    "padding":     "10px 0",
-    "width":       "100%",
-    "marginTop":   "8px",
+    "color":        "white",
+    "cursor":       "pointer",
+    "fontSize":     "14px",
+    "fontWeight":   "600",
+    "padding":      "10px 0",
+    "width":        "100%",
+    "marginTop":    "8px",
 }
-_DD = {"background": "#21262d", "color": TEXT}
+_DD = {
+    "background":        "#21262d",
+    "color":             TEXT,
+    "border":            f"1px solid {BORDER}",
+    "borderRadius":      "6px",
+}
 
 
 def _field(label: str, component) -> html.Div:
@@ -470,6 +583,7 @@ _sidebar = html.Div(
             options=[{"label": s, "value": s} for s in STRATEGIES],
             value=STRATEGIES[0],
             clearable=False,
+            searchable=True,
             style=_DD,
         )),
 
@@ -481,15 +595,21 @@ _sidebar = html.Div(
 
         _field("Exchange", dcc.Dropdown(
             id="dd-exchange",
-            options=[{"label": e.capitalize(), "value": e} for e in EXCHANGES],
+            options=EXCHANGES,
             value="binance",
             clearable=False,
+            searchable=True,
             style=_DD,
         )),
 
-        _field("Symbol (e.g. BTC/USDT)", dcc.Input(
-            id="inp-symbol", type="text", value="BTC/USDT",
-            style=_INP, debounce=True,
+        _field("Ticker", dcc.Dropdown(
+            id="dd-symbol",
+            options=TICKERS,
+            value="BTC/USDT",
+            clearable=False,
+            searchable=True,
+            placeholder="Search or type a symbol…",
+            style=_DD,
         )),
 
         _field("Timeframe", dcc.Dropdown(
@@ -572,7 +692,7 @@ _sidebar = html.Div(
             type="dot",
         ),
     ],
-    style={**_CARD, "width": "280px", "minWidth": "280px", "flexShrink": "0"},
+    style={**_CARD, "width": "300px", "minWidth": "300px", "flexShrink": "0"},
 )
 
 # ── results pane ─────────────────────────────────────────────────────────── #
@@ -655,34 +775,10 @@ _results = html.Div(
                         "border": f"1px solid {BORDER}",
                     },
                     style_data_conditional=[
-                        {
-                            "if": {
-                                "filter_query": "{P&L} > 0",
-                                "column_id": "P&L",
-                            },
-                            "color": GREEN,
-                        },
-                        {
-                            "if": {
-                                "filter_query": "{P&L} < 0",
-                                "column_id": "P&L",
-                            },
-                            "color": RED,
-                        },
-                        {
-                            "if": {
-                                "filter_query": "{Return %} > 0",
-                                "column_id": "Return %",
-                            },
-                            "color": GREEN,
-                        },
-                        {
-                            "if": {
-                                "filter_query": "{Return %} < 0",
-                                "column_id": "Return %",
-                            },
-                            "color": RED,
-                        },
+                        {"if": {"filter_query": "{P&L} > 0",      "column_id": "P&L"},      "color": GREEN},
+                        {"if": {"filter_query": "{P&L} < 0",      "column_id": "P&L"},      "color": RED},
+                        {"if": {"filter_query": "{Return %} > 0", "column_id": "Return %"}, "color": GREEN},
+                        {"if": {"filter_query": "{Return %} < 0", "column_id": "Return %"}, "color": RED},
                     ],
                 ),
             ],
@@ -699,7 +795,7 @@ app = dash.Dash(
     title="tradebot · Backtest Dashboard",
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
-server = app.server  # expose Flask server for gunicorn / Render
+server = app.server  # expose Flask server for gunicorn / Render / HF Spaces
 
 app.layout = html.Div(
     [
@@ -717,11 +813,11 @@ app.layout = html.Div(
                 ),
             ],
             style={
-                "background":     CARD,
-                "padding":        "12px 24px",
-                "display":        "flex",
-                "alignItems":     "center",
-                "borderBottom":   f"1px solid {BORDER}",
+                "background":   CARD,
+                "padding":      "12px 24px",
+                "display":      "flex",
+                "alignItems":   "center",
+                "borderBottom": f"1px solid {BORDER}",
             },
         ),
 
@@ -738,9 +834,9 @@ app.layout = html.Div(
         ),
     ],
     style={
-        "background":  BG,
-        "minHeight":   "100vh",
-        "fontFamily":  "'Inter', 'Segoe UI', 'Arial', sans-serif",
+        "background": BG,
+        "minHeight":  "100vh",
+        "fontFamily": "'Inter', 'Segoe UI', 'Arial', sans-serif",
     },
 )
 
@@ -748,15 +844,15 @@ app.layout = html.Div(
 # ────────────────────────────────────────────────────── callbacks ─────────── #
 
 @app.callback(
-    Output("strategy-desc",  "children"),
-    Output("lbl-param1",     "children"),
-    Output("lbl-param2",     "children"),
-    Output("lbl-param3",     "children"),
-    Output("div-param3",     "style"),
-    Output("p-param1",       "value"),
-    Output("p-param2",       "value"),
-    Output("p-param3",       "value"),
-    Input("dd-strategy",     "value"),
+    Output("strategy-desc", "children"),
+    Output("lbl-param1",    "children"),
+    Output("lbl-param2",    "children"),
+    Output("lbl-param3",    "children"),
+    Output("div-param3",    "style"),
+    Output("p-param1",      "value"),
+    Output("p-param2",      "value"),
+    Output("p-param3",      "value"),
+    Input("dd-strategy",    "value"),
 )
 def sync_params_ui(strategy: str):
     """Update parameter labels and default values when strategy changes."""
@@ -792,7 +888,7 @@ def sync_params_ui(strategy: str):
     Input("btn-run",        "n_clicks"),
     State("dd-strategy",    "value"),
     State("dd-exchange",    "value"),
-    State("inp-symbol",     "value"),
+    State("dd-symbol",      "value"),
     State("dd-tf",          "value"),
     State("dp-start",       "date"),
     State("dp-end",         "date"),

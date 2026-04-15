@@ -1,16 +1,16 @@
 <div align="center">
   <h1>🤖 tradebot</h1>
   <p>
-    An automated cryptocurrency trading bot with five built-in strategies,
+    An automated cryptocurrency trading bot with eight built-in strategies,
     built with the
     <a href="https://github.com/coding-kitties/investing-algorithm-framework">investing-algorithm-framework v8</a>
-    and a public interactive backtest dashboard deployable to Render or Railway in minutes.
+    and a public interactive backtest dashboard deployable to Hugging Face Spaces in minutes.
   </p>
   <p>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python">
-    <img src="https://img.shields.io/badge/Exchange-Bitvavo%20%2F%20Binance%20%2F%20Kraken-orange?style=flat-square" alt="Exchanges">
-    <img src="https://img.shields.io/badge/Strategies-5-green?style=flat-square" alt="Strategies">
-    <img src="https://img.shields.io/badge/Deploy-Render%20%7C%20Railway%20%7C%20Azure-0078D4?style=flat-square" alt="Deploy">
+    <img src="https://img.shields.io/badge/Exchanges-Binance%20%7C%20Kraken%20%7C%20Bitvavo%20%7C%20more-orange?style=flat-square" alt="Exchanges">
+    <img src="https://img.shields.io/badge/Strategies-8-green?style=flat-square" alt="Strategies">
+    <img src="https://img.shields.io/badge/Deploy-HuggingFace%20%7C%20Render%20%7C%20Railway-0078D4?style=flat-square" alt="Deploy">
   </p>
 </div>
 
@@ -38,13 +38,7 @@
     - [6.8 Run Dashboard & Bot Together](#68-run-dashboard--bot-together)
     - [6.9 Deploy Dashboard to a Server](#69-deploy-dashboard-to-a-server)
     - [6.10 Troubleshooting](#610-troubleshooting)
-11. [Step 7 – Interactive Public Backtest Dashboard](#step-7--interactive-public-backtest-dashboard)
-    - [7.1 What It Does](#71-what-it-does)
-    - [7.2 Run Locally](#72-run-locally)
-    - [7.3 Deploy to Render (Free)](#73-deploy-to-render-free)
-    - [7.4 Deploy to Railway (Free)](#74-deploy-to-railway-free)
-    - [7.5 Supported Strategies & Parameters](#75-supported-strategies--parameters)
-12. [Configuration Reference](#configuration-reference)
+11. [Configuration Reference](#configuration-reference)
 
 ---
 
@@ -85,7 +79,7 @@ The diagram below shows exactly how `strategy.py` evaluates each 2-hour candle a
 
 ## Strategies
 
-The project ships five ready-to-use strategies, all living in the `strategies/` package.
+The project ships eight ready-to-use strategies, all living in the `strategies/` package.
 Each strategy follows the same interface so you can swap them in `app.py` with a single line.
 
 | Strategy | File | Signal – Buy | Signal – Sell | Key params |
@@ -95,14 +89,17 @@ Each strategy follows the same interface so you can swap them in `app.py` with a
 | **MACD Signal Cross** | `strategies/macd_strategy.py` | MACD line crosses above Signal line | MACD line crosses below Signal line | `fast=12`, `slow=26`, `signal=9` |
 | **Bollinger Bands** | `strategies/bollinger_strategy.py` | Close touches or falls below lower band | Close touches or rises above upper band | `period=20`, `stddev=2.0` |
 | **EMA Crossover** | `strategies/ema_cross.py` | Fast EMA(9) crosses above Slow EMA(21) | Fast EMA(9) crosses below Slow EMA(21) | `fast=9`, `slow=21` |
+| **Stochastic Oscillator** | `strategies/stochastic_strategy.py` | %K crosses above %D below 20 | %K crosses below %D above 80 | `k=14`, `oversold=20`, `overbought=80` |
+| **CCI Reversion** | `strategies/cci_strategy.py` | CCI(20) drops below −100 | CCI(20) rises above +100 | `period=20`, `oversold=-100`, `overbought=100` |
+| **Williams %R** | `strategies/williams_r_strategy.py` | WR(14) drops below −80 | WR(14) rises above −20 | `period=14`, `oversold=-80`, `overbought=-20` |
 
 ### Switching strategies in `app.py`
 
 ```python
 # Use any strategy by importing from the strategies package
-from strategies import RSIReversionTradingStrategy   # or any other
+from strategies import StochasticTradingStrategy   # or any other
 
-app.add_strategy(RSIReversionTradingStrategy)
+app.add_strategy(StochasticTradingStrategy)
 ```
 
 ---
@@ -112,12 +109,15 @@ app.add_strategy(RSIReversionTradingStrategy)
 ```
 tradebot/
 ├── strategies/                     # Trading strategy library
-│   ├── __init__.py                 # Exports all five strategies
+│   ├── __init__.py                 # Exports all eight strategies
 │   ├── golden_cross.py             # SMA 9/50 crossover (original)
 │   ├── rsi_strategy.py             # RSI-14 mean reversion
 │   ├── macd_strategy.py            # MACD signal-line cross
 │   ├── bollinger_strategy.py       # Bollinger Bands touch
-│   └── ema_cross.py                # EMA 9/21 crossover
+│   ├── ema_cross.py                # EMA 9/21 crossover
+│   ├── stochastic_strategy.py      # Stochastic %K/%D crossover
+│   ├── cci_strategy.py             # CCI mean reversion
+│   └── williams_r_strategy.py      # Williams %R mean reversion
 │
 ├── app.py                          # App factory – registers data providers and strategy
 ├── strategy.py                     # Original strategy (kept for backward compatibility)
@@ -125,8 +125,9 @@ tradebot/
 ├── plot.py                         # Step 4 – Generate QF-Lib-style performance charts
 ├── azure_function.py               # Step 5 – Azure Functions timer-trigger deployment
 ├── dashboard.py                    # Step 6 – Live real-time monitoring dashboard
-├── backtest_dashboard.py           # Step 7 – Interactive public backtest dashboard
+├── backtest_dashboard.py           # Interactive public backtest dashboard (Plotly Dash)
 │
+├── Dockerfile                      # Hugging Face Spaces (Docker) deployment
 ├── render.yaml                     # Render.com deployment config
 ├── Procfile                        # Railway / Heroku deployment hook
 ├── requirements-dashboard.txt      # Dashboard-only dependencies
@@ -599,127 +600,55 @@ server {
 
 ---
 
-## Step 7 – Interactive Public Backtest Dashboard
+## Backtest Dashboard
 
-`backtest_dashboard.py` is a fully standalone interactive web app that lets
-**anyone** run a backtest directly in their browser — no Python or API keys needed.
+`backtest_dashboard.py` is a fully standalone interactive web app that lets **anyone** run a
+backtest in their browser — no Python or API keys required.
 
----
+**Features:**
+- 8 strategies with editable parameters
+- 30+ pre-loaded tickers (BTC, ETH, SOL, DOGE, UNI, …) plus free-text entry
+- 8 exchanges (Binance, Kraken, KuCoin, Bybit, OKX, Bitvavo, Bitfinex, Gate.io)
+- Timeframes: 15m, 1h, 4h, 1d, 1w
+- Plotly dark theme charts: equity curve + monthly returns heatmap
+- KPI cards: total return, final value, Sharpe ratio, max drawdown, win rate
+- Colour-coded trades log table
 
-### 7.1 What It Does
-
-```
-Browser (visitor)
-  │  picks: strategy · symbol · exchange · timeframe · dates · balance
-  ▼
-backtest_dashboard.py  (Plotly Dash)
-  │  fetches public OHLCV from Binance / Kraken / KuCoin via CCXT
-  │  computes indicators with pandas-ta  (pure Python, no C extensions)
-  │  runs event-driven backtest
-  ▼
-Results displayed instantly:
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  Total Return  ·  Final Value  ·  Sharpe  ·  Max DD  ·  Win %  │
-  │  ─────────────────────────────────────────────────────────────  │
-  │  Interactive equity curve (Plotly)                              │
-  │  Monthly returns heatmap (green/red)                            │
-  │  Full trades log table (paginated, colour-coded P&L)            │
-  └─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-### 7.2 Run Locally
+### Run Locally
 
 ```bash
-# 1. Install dashboard dependencies (separate from the live-bot requirements)
 pip install -r requirements-dashboard.txt
-
-# 2. Start the server
-python backtest_dashboard.py
-
-# Dashboard is now live at  http://127.0.0.1:8050
+python backtest_dashboard.py      # → http://127.0.0.1:8050
 ```
 
-To use a custom port:
+### Deploy to Hugging Face Spaces (Free, Docker)
 
-```bash
-PORT=8080 python backtest_dashboard.py
-```
-
----
-
-### 7.3 Deploy to Render (Free, Recommended)
-
-Render is the easiest path to a public URL.  `render.yaml` is already in the repo.
+A `Dockerfile` is included in the repo. HF Spaces runs it automatically.
 
 **Steps (≈ 5 minutes):**
 
-1. Sign up for free at **[render.com](https://render.com)** — "Continue with GitHub" works.
-2. Click **New → Web Service**.
-3. Select your **mr-robot77/tradebot** repository.
-4. Render detects `render.yaml` automatically — **no manual config needed**.
-5. Click **Create Web Service**.
-6. Wait ~2 minutes for the first deploy.
-7. Open the URL Render provides — your dashboard is live!
+1. Sign up for free at **[huggingface.co](https://huggingface.co)** — GitHub login works.
+2. Go to **[huggingface.co/spaces](https://huggingface.co/spaces)** → **New Space**.
+3. Set **SDK: Docker** and pick a name (e.g. `tradebot-backtest`).
+4. In **Files**, connect or push the `mr-robot77/tradebot` repository.
+5. HF builds the `Dockerfile` automatically and starts the app on port 7860.
+6. Your dashboard is live at `https://huggingface.co/spaces/<your-username>/tradebot-backtest`.
 
-> **Free tier note:** Render free services spin down after 15 minutes of inactivity
-> and take ~30 seconds to wake up on the next visit.
-> Upgrade to the **Starter** plan ($7/month) to keep it always on.
+> The free CPU tier is always-on and has no sleep timeout.
 
----
+### Deploy to Render (Free)
 
-### 7.4 Deploy to Railway (Free)
+`render.yaml` is already in the repo — Render reads it automatically.
 
-**Steps (≈ 3 minutes):**
+1. Sign up at **[render.com](https://render.com)** → **New → Web Service**.
+2. Connect the `mr-robot77/tradebot` repository.
+3. Render deploys automatically. Your URL: `https://tradebot-dashboard.onrender.com`.
 
-1. Sign up for free at **[railway.app](https://railway.app)** — "Login with GitHub" works.
-2. Click **New Project → Deploy from GitHub repo** → select `mr-robot77/tradebot`.
-3. In the **Service Settings → Variables** tab, add:
+### Deploy to Railway (Free)
 
-   | Variable | Value |
-   |----------|-------|
-   | `NIXPACKS_INSTALL_CMD` | `pip install -r requirements-dashboard.txt` |
-   | `PORT` | `8000` |
+`Procfile` is already in the repo.
 
-4. In **Settings → Deploy → Start Command**, set:
-
-   ```
-   gunicorn backtest_dashboard:server --bind 0.0.0.0:$PORT --workers 1 --timeout 120
-   ```
-
-5. Click **Deploy** — Railway builds and gives you a public URL.
-
----
-
-### 7.5 Supported Strategies & Parameters
-
-| Strategy | Parameter 1 | Parameter 2 | Parameter 3 |
-|----------|-------------|-------------|-------------|
-| **Golden Cross / Death Cross** | Fast SMA Period (default 9) | Slow SMA Period (default 50) | — |
-| **RSI Reversion** | RSI Period (default 14) | Oversold threshold (default 30) | Overbought threshold (default 70) |
-| **MACD Signal Cross** | Fast Period (default 12) | Slow Period (default 26) | Signal Period (default 9) |
-| **Bollinger Bands** | BB Period (default 20) | Std Dev Multiplier (default 2.0) | — |
-| **EMA Crossover** | Fast EMA Period (default 9) | Slow EMA Period (default 21) | — |
-
-All parameters are editable in the sidebar before clicking **Run Backtest**.
-
-**Supported exchanges** (public OHLCV, no API key required): `binance`, `kraken`, `kucoin`
-
-**Supported timeframes:** `1h` (hourly), `4h` (4-hour), `1d` (daily)
-
-**Symbol format:** Use the exchange's standard pair format, e.g. `BTC/USDT`, `ETH/USDT`, `SOL/USDT`.
-
----
-
-### 7.6 Troubleshooting the Interactive Dashboard
-
-| Symptom | Likely cause | Fix |
-|---------|--------------|-----|
-| `ModuleNotFoundError: No module named 'pandas_ta'` | Dashboard deps not installed | `pip install -r requirements-dashboard.txt` |
-| "No OHLCV data returned" error | Wrong symbol format or exchange doesn't carry the pair | Check the symbol (e.g. `BTC/USDT` not `BTCUSDT`); try a different exchange |
-| "Only N candles found" error | Date range too narrow for the chosen timeframe | Widen the date range or switch to `1h` |
-| Equity curve is flat / no trades | Strategy generated no signals in the period | Adjust parameters or try a different date range |
-| Render deploy fails | Build error in logs | Check `render.yaml` — ensure `requirements-dashboard.txt` is in the repo root |
-
+1. Sign up at **[railway.app](https://railway.app)** → **New Project → Deploy from GitHub repo**.
+2. Add env var `NIXPACKS_INSTALL_CMD=pip install -r requirements-dashboard.txt`.
+3. Start command: `gunicorn backtest_dashboard:server --bind 0.0.0.0:$PORT --workers 1 --timeout 120`.
 
