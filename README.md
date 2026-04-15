@@ -1,15 +1,16 @@
 <div align="center">
   <h1>🤖 tradebot</h1>
   <p>
-    An automated cryptocurrency trading bot implementing a Golden Cross / Death Cross
-    strategy on BTC/EUR, built with the
-    <a href="https://github.com/coding-kitties/investing-algorithm-framework">investing-algorithm-framework v8</a>.
+    An automated cryptocurrency trading bot with five built-in strategies,
+    built with the
+    <a href="https://github.com/coding-kitties/investing-algorithm-framework">investing-algorithm-framework v8</a>
+    and a public interactive backtest dashboard deployable to Render or Railway in minutes.
   </p>
   <p>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python">
-    <img src="https://img.shields.io/badge/Exchange-Bitvavo-orange?style=flat-square" alt="Bitvavo">
-    <img src="https://img.shields.io/badge/Timeframe-2h-green?style=flat-square" alt="Timeframe">
-    <img src="https://img.shields.io/badge/Deploy-Azure%20Functions-0078D4?style=flat-square&logo=microsoft-azure" alt="Azure">
+    <img src="https://img.shields.io/badge/Exchange-Bitvavo%20%2F%20Binance%20%2F%20Kraken-orange?style=flat-square" alt="Exchanges">
+    <img src="https://img.shields.io/badge/Strategies-5-green?style=flat-square" alt="Strategies">
+    <img src="https://img.shields.io/badge/Deploy-Render%20%7C%20Railway%20%7C%20Azure-0078D4?style=flat-square" alt="Deploy">
   </p>
 </div>
 
@@ -18,7 +19,7 @@
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Strategy](#strategy)
+2. [Strategies](#strategies)
 3. [Project Structure](#project-structure)
 4. [Prerequisites](#prerequisites)
 5. [Step 1 – Install Dependencies](#step-1--install-dependencies)
@@ -37,7 +38,13 @@
     - [6.8 Run Dashboard & Bot Together](#68-run-dashboard--bot-together)
     - [6.9 Deploy Dashboard to a Server](#69-deploy-dashboard-to-a-server)
     - [6.10 Troubleshooting](#610-troubleshooting)
-11. [Configuration Reference](#configuration-reference)
+11. [Step 7 – Interactive Public Backtest Dashboard](#step-7--interactive-public-backtest-dashboard)
+    - [7.1 What It Does](#71-what-it-does)
+    - [7.2 Run Locally](#72-run-locally)
+    - [7.3 Deploy to Render (Free)](#73-deploy-to-render-free)
+    - [7.4 Deploy to Railway (Free)](#74-deploy-to-railway-free)
+    - [7.5 Supported Strategies & Parameters](#75-supported-strategies--parameters)
+12. [Configuration Reference](#configuration-reference)
 
 ---
 
@@ -76,15 +83,27 @@ The diagram below shows exactly how `strategy.py` evaluates each 2-hour candle a
 
 ---
 
-## Strategy
+## Strategies
 
-| Signal | Condition |
-|--------|-----------|
-| **Buy** (Golden Cross) | Fast SMA (9) crosses **above** Slow SMA (50) |
-| **Sell** (Death Cross) | Fast SMA (9) crosses **below** Slow SMA (50) |
+The project ships five ready-to-use strategies, all living in the `strategies/` package.
+Each strategy follows the same interface so you can swap them in `app.py` with a single line.
 
-Each buy order allocates **25 %** of the available portfolio balance.
-The strategy runs every **2 hours** on BTC/EUR data from [Bitvavo](https://bitvavo.com).
+| Strategy | File | Signal – Buy | Signal – Sell | Key params |
+|---|---|---|---|---|
+| **Golden Cross / Death Cross** | `strategies/golden_cross.py` | Fast SMA(9) crosses above Slow SMA(50) | Fast SMA crosses below Slow SMA | `fast=9`, `slow=50` |
+| **RSI Reversion** | `strategies/rsi_strategy.py` | RSI(14) falls below 30 (oversold) | RSI(14) rises above 70 (overbought) | `period=14`, `oversold=30`, `overbought=70` |
+| **MACD Signal Cross** | `strategies/macd_strategy.py` | MACD line crosses above Signal line | MACD line crosses below Signal line | `fast=12`, `slow=26`, `signal=9` |
+| **Bollinger Bands** | `strategies/bollinger_strategy.py` | Close touches or falls below lower band | Close touches or rises above upper band | `period=20`, `stddev=2.0` |
+| **EMA Crossover** | `strategies/ema_cross.py` | Fast EMA(9) crosses above Slow EMA(21) | Fast EMA(9) crosses below Slow EMA(21) | `fast=9`, `slow=21` |
+
+### Switching strategies in `app.py`
+
+```python
+# Use any strategy by importing from the strategies package
+from strategies import RSIReversionTradingStrategy   # or any other
+
+app.add_strategy(RSIReversionTradingStrategy)
+```
 
 ---
 
@@ -92,14 +111,27 @@ The strategy runs every **2 hours** on BTC/EUR data from [Bitvavo](https://bitva
 
 ```
 tradebot/
-├── app.py              # App factory – registers data providers and strategy
-├── strategy.py         # Golden Cross / Death Cross trading strategy
-├── backtest.py         # Step 3 – Run a historical backtest (CLI)
-├── plot.py             # Step 4 – Generate QF-Lib-style performance charts
-├── azure_function.py   # Step 5 – Azure Functions timer-trigger deployment
-├── dashboard.py        # Step 6 – Live real-time monitoring dashboard
+├── strategies/                     # Trading strategy library
+│   ├── __init__.py                 # Exports all five strategies
+│   ├── golden_cross.py             # SMA 9/50 crossover (original)
+│   ├── rsi_strategy.py             # RSI-14 mean reversion
+│   ├── macd_strategy.py            # MACD signal-line cross
+│   ├── bollinger_strategy.py       # Bollinger Bands touch
+│   └── ema_cross.py                # EMA 9/21 crossover
+│
+├── app.py                          # App factory – registers data providers and strategy
+├── strategy.py                     # Original strategy (kept for backward compatibility)
+├── backtest.py                     # Step 3 – Run a historical backtest (CLI)
+├── plot.py                         # Step 4 – Generate QF-Lib-style performance charts
+├── azure_function.py               # Step 5 – Azure Functions timer-trigger deployment
+├── dashboard.py                    # Step 6 – Live real-time monitoring dashboard
+├── backtest_dashboard.py           # Step 7 – Interactive public backtest dashboard
+│
+├── render.yaml                     # Render.com deployment config
+├── Procfile                        # Railway / Heroku deployment hook
+├── requirements-dashboard.txt      # Dashboard-only dependencies
 └── docs/
-    └── images/         # Sample output images embedded in this README
+    └── images/                     # Sample output images embedded in this README
 ```
 
 ---
@@ -564,4 +596,130 @@ server {
 | `POLL_INTERVAL_MS` | `dashboard.py` | `30000` | Dashboard refresh interval (ms) |
 | `PORT` | `dashboard.py` | `8050` | Dashboard HTTP port |
 | `DATABASE_PATH` | `dashboard.py` | `bot_state.db` | Path to the bot's SQLite database |
+
+---
+
+## Step 7 – Interactive Public Backtest Dashboard
+
+`backtest_dashboard.py` is a fully standalone interactive web app that lets
+**anyone** run a backtest directly in their browser — no Python or API keys needed.
+
+---
+
+### 7.1 What It Does
+
+```
+Browser (visitor)
+  │  picks: strategy · symbol · exchange · timeframe · dates · balance
+  ▼
+backtest_dashboard.py  (Plotly Dash)
+  │  fetches public OHLCV from Binance / Kraken / KuCoin via CCXT
+  │  computes indicators with pandas-ta  (pure Python, no C extensions)
+  │  runs event-driven backtest
+  ▼
+Results displayed instantly:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Total Return  ·  Final Value  ·  Sharpe  ·  Max DD  ·  Win %  │
+  │  ─────────────────────────────────────────────────────────────  │
+  │  Interactive equity curve (Plotly)                              │
+  │  Monthly returns heatmap (green/red)                            │
+  │  Full trades log table (paginated, colour-coded P&L)            │
+  └─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 7.2 Run Locally
+
+```bash
+# 1. Install dashboard dependencies (separate from the live-bot requirements)
+pip install -r requirements-dashboard.txt
+
+# 2. Start the server
+python backtest_dashboard.py
+
+# Dashboard is now live at  http://127.0.0.1:8050
+```
+
+To use a custom port:
+
+```bash
+PORT=8080 python backtest_dashboard.py
+```
+
+---
+
+### 7.3 Deploy to Render (Free, Recommended)
+
+Render is the easiest path to a public URL.  `render.yaml` is already in the repo.
+
+**Steps (≈ 5 minutes):**
+
+1. Sign up for free at **[render.com](https://render.com)** — "Continue with GitHub" works.
+2. Click **New → Web Service**.
+3. Select your **mr-robot77/tradebot** repository.
+4. Render detects `render.yaml` automatically — **no manual config needed**.
+5. Click **Create Web Service**.
+6. Wait ~2 minutes for the first deploy.
+7. Open the URL Render provides — your dashboard is live!
+
+> **Free tier note:** Render free services spin down after 15 minutes of inactivity
+> and take ~30 seconds to wake up on the next visit.
+> Upgrade to the **Starter** plan ($7/month) to keep it always on.
+
+---
+
+### 7.4 Deploy to Railway (Free)
+
+**Steps (≈ 3 minutes):**
+
+1. Sign up for free at **[railway.app](https://railway.app)** — "Login with GitHub" works.
+2. Click **New Project → Deploy from GitHub repo** → select `mr-robot77/tradebot`.
+3. In the **Service Settings → Variables** tab, add:
+
+   | Variable | Value |
+   |----------|-------|
+   | `NIXPACKS_INSTALL_CMD` | `pip install -r requirements-dashboard.txt` |
+   | `PORT` | `8000` |
+
+4. In **Settings → Deploy → Start Command**, set:
+
+   ```
+   gunicorn backtest_dashboard:server --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+   ```
+
+5. Click **Deploy** — Railway builds and gives you a public URL.
+
+---
+
+### 7.5 Supported Strategies & Parameters
+
+| Strategy | Parameter 1 | Parameter 2 | Parameter 3 |
+|----------|-------------|-------------|-------------|
+| **Golden Cross / Death Cross** | Fast SMA Period (default 9) | Slow SMA Period (default 50) | — |
+| **RSI Reversion** | RSI Period (default 14) | Oversold threshold (default 30) | Overbought threshold (default 70) |
+| **MACD Signal Cross** | Fast Period (default 12) | Slow Period (default 26) | Signal Period (default 9) |
+| **Bollinger Bands** | BB Period (default 20) | Std Dev Multiplier (default 2.0) | — |
+| **EMA Crossover** | Fast EMA Period (default 9) | Slow EMA Period (default 21) | — |
+
+All parameters are editable in the sidebar before clicking **Run Backtest**.
+
+**Supported exchanges** (public OHLCV, no API key required): `binance`, `kraken`, `kucoin`
+
+**Supported timeframes:** `1h` (hourly), `4h` (4-hour), `1d` (daily)
+
+**Symbol format:** Use the exchange's standard pair format, e.g. `BTC/USDT`, `ETH/USDT`, `SOL/USDT`.
+
+---
+
+### 7.6 Troubleshooting the Interactive Dashboard
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| `ModuleNotFoundError: No module named 'pandas_ta'` | Dashboard deps not installed | `pip install -r requirements-dashboard.txt` |
+| "No OHLCV data returned" error | Wrong symbol format or exchange doesn't carry the pair | Check the symbol (e.g. `BTC/USDT` not `BTCUSDT`); try a different exchange |
+| "Only N candles found" error | Date range too narrow for the chosen timeframe | Widen the date range or switch to `1h` |
+| Equity curve is flat / no trades | Strategy generated no signals in the period | Adjust parameters or try a different date range |
+| Render deploy fails | Build error in logs | Check `render.yaml` — ensure `requirements-dashboard.txt` is in the repo root |
+
 
