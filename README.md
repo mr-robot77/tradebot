@@ -39,6 +39,7 @@
     - [6.9 Deploy Dashboard to a Server](#69-deploy-dashboard-to-a-server)
     - [6.10 Troubleshooting](#610-troubleshooting)
 11. [Configuration Reference](#configuration-reference)
+12. [Backtest Dashboard](#backtest-dashboard)
 
 ---
 
@@ -615,7 +616,7 @@ backtest in their browser — no Python or API keys required.
 - 8 exchanges (Binance, Kraken, KuCoin, Bybit, OKX, Bitvavo, Bitfinex, Gate.io)
 - Timeframes: 15m, 1h, 4h, 1d, 1w
 - Plotly dark theme charts: equity curve + monthly returns heatmap
-- KPI cards: total return, final value, Sharpe ratio, max drawdown, win rate
+- KPI cards: total return, final value, Sharpe ratio, max drawdown, win rate, # trades
 - Colour-coded trades log table
 
 ### Run Locally

@@ -4,7 +4,7 @@ Interactive public backtest dashboard for tradebot.
 Lets any visitor choose a trading strategy, ticker, exchange, date range,
 timeframe, and initial balance, click "Run Backtest", and instantly see:
   - Equity curve (Plotly interactive chart with dark template)
-  - Performance KPIs: total return, Sharpe ratio, max drawdown, win rate
+  - Performance KPIs: total return, final value, Sharpe ratio, max drawdown, win rate, # trades
   - Monthly returns heatmap
   - Full annotated trades table
 

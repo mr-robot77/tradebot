@@ -32,6 +32,9 @@ DATABASE_PATH = Path(os.environ.get("DATABASE_PATH", _DEFAULT_DB))
 # How often (ms) the browser polls for new data
 POLL_INTERVAL_MS = 30_000
 
+# HTTP port for the dashboard server (override with the PORT env variable)
+PORT = int(os.environ.get("PORT", 8050))
+
 ACCENT = "#1f6fb2"
 BG     = "#0d1117"
 CARD   = "#161b22"
@@ -406,6 +409,5 @@ def refresh(_n):
 # ──────────────────────────────────────────────────────────── main ────────── #
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8050))
-    print(f"\n  tradebot live dashboard  ->  http://127.0.0.1:{port}\n")
-    app.run(debug=False, host="0.0.0.0", port=port)
+    print(f"\n  tradebot live dashboard  ->  http://127.0.0.1:{PORT}\n")
+    app.run(debug=False, host="0.0.0.0", port=PORT)
