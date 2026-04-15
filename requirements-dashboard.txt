@@ -1,0 +1,26 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# requirements-dashboard.txt
+#
+# Dependencies for the interactive backtest dashboard (backtest_dashboard.py).
+# Install with:
+#   pip install -r requirements-dashboard.txt
+#
+# These are intentionally kept separate from the live-bot dependencies
+# (investing-algorithm-framework, tulipy) so the dashboard can be deployed
+# to free-tier cloud services without needing compiled C extensions.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Web framework / UI
+dash>=2.17,<3.0
+plotly>=5.22,<6.0
+
+# WSGI server (used by Render / Railway in production)
+gunicorn>=22.0,<24.0
+
+# Market data
+ccxt>=4.3,<5.0
+
+# Data + indicators (pure Python — no C extension required)
+pandas>=2.2,<3.0
+numpy>=1.26,<2.0
+pandas-ta>=0.3.14b
