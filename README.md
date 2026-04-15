@@ -35,11 +35,21 @@
 
 **tradebot** buys and sells Bitcoin automatically by detecting when short-term
 momentum (9-period SMA) crosses the long-term trend (50-period SMA) on
-2-hour candles.  The full workflow is:
+2-hour candles.
 
-```
-Download OHLCV data → Run backtest → Review charts → Deploy to cloud → Monitor live
-```
+### Architecture & Workflow
+
+![Project workflow diagram](docs/images/workflow.png)
+
+The full pipeline runs in five phases:
+
+| Phase | Description |
+|-------|-------------|
+| **① Data Sources** | Bitvavo exchange provides 2-hour OHLCV candles and real-time ticker via CCXT |
+| **② Core Application** | `app.py` wires the data providers together; `strategy.py` implements the SMA crossover logic |
+| **③ Development** | `backtest.py` replays history; `plot.py` saves a QF-Lib-style 6-panel report |
+| **④ Production** | `azure_function.py` deploys the bot as a serverless Azure Functions timer trigger |
+| **⑤ Monitoring** | `dashboard.py` serves a live Plotly Dash UI that reads the bot's SQLite state database |
 
 ---
 
