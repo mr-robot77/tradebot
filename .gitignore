@@ -128,6 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Generated backtest report images
-backtest_report.png
-backtest_report.html
+# Generated backtest report images (in project root only, not docs/images/)
+/backtest_report.png
+/backtest_report.html
