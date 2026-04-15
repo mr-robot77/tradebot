@@ -1,21 +1,23 @@
-from datetime import datetime, timedelta
+from investing_algorithm_framework import create_app, CCXTOHLCVDataProvider, \
+    CCXTTickerDataProvider
 
-from investing_algorithm_framework import CCXTOHLCVMarketDataSource, \
-    CCXTTickerMarketDataSource
+from strategy import GoldenCrossDeathCrossTradingStrategy
 
-# OHLCV data for BTC/EUR with 2-hour candles, going back 17 days
-bitvavo_btc_eur_ohlcv_2h = CCXTOHLCVMarketDataSource(
-    identifier="BTC/EUR-ohlcv",
-    market="BITVAVO",
+app = create_app()
+
+# OHLCV data provider for BTC/EUR with 2-hour candles
+# We need at least 50 candles for the slow SMA + buffer (17 days * 24h / 2h = 204)
+app.add_data_provider(CCXTOHLCVDataProvider(
     symbol="BTC/EUR",
-    timeframe="2h",
-    # We want to retrieve data from the last 17 days (17 days * 24 hours / 2h)
-    start_date_func=lambda: datetime.utcnow() - timedelta(days=17)
-)
-
-# Ticker data to track orders, trades and positions we make with symbol BTC/EUR
-bitvavo_btc_eur_ticker = CCXTTickerMarketDataSource(
-    identifier="BTC/EUR-ticker",
     market="BITVAVO",
+    time_frame="2h",
+    window_size=204,
+))
+
+# Ticker data provider for live price and order tracking
+app.add_data_provider(CCXTTickerDataProvider(
     symbol="BTC/EUR",
-)
+    market="BITVAVO",
+))
+
+app.add_strategy(GoldenCrossDeathCrossTradingStrategy)

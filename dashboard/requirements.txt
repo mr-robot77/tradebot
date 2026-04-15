@@ -1,0 +1,29 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# dashboard/requirements.txt
+#
+# Dependencies for the dashboard applications:
+#   - dashboard/backtest_dashboard.py  (public interactive backtest, HF Spaces)
+#   - dashboard/dashboard.py           (live trading monitoring dashboard)
+#
+# Install with:
+#   pip install -r dashboard/requirements.txt
+#
+# These are intentionally kept separate from the live-bot dependencies
+# (investing-algorithm-framework, tulipy) so the dashboard can be deployed
+# to free-tier cloud services without needing compiled C extensions.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Web framework / UI
+dash>=2.17,<3.0
+plotly>=5.22,<6.0
+
+# WSGI server (used by Hugging Face Spaces in production)
+gunicorn>=22.0,<24.0
+
+# Market data
+ccxt>=4.3,<5.0
+
+# Data + indicators (pure Python — no C extension required)
+pandas>=2.2,<3.0
+numpy>=1.26,<2.0
+pandas-ta>=0.3.14b
