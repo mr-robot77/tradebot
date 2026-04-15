@@ -19,11 +19,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first (layer-cache friendly)
-COPY requirements-dashboard.txt .
+COPY dashboard/requirements.txt ./requirements-dashboard.txt
 RUN pip install --no-cache-dir -r requirements-dashboard.txt
 
 # Copy application code
-COPY backtest_dashboard.py .
+COPY dashboard/backtest_dashboard.py .
 
 # HF Spaces runs as a non-root user — create one
 RUN useradd -m appuser

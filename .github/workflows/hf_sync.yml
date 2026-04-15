@@ -1,0 +1,40 @@
+name: Sync to Hugging Face Spaces
+
+# Pushes this repository to the HF Space on every push to main.
+# Required secrets (set in Settings → Secrets → Actions):
+#   HF_TOKEN       – HuggingFace write token (https://huggingface.co/settings/tokens)
+#   HF_USERNAME    – HuggingFace account username (e.g. mr-robot77)
+#   HF_SPACE_NAME  – Space repository name (e.g. tradebot-backtest)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepend HF Space metadata to README
+        run: |
+          cat .github/hf_space_header.md README.md > /tmp/hf_readme.md
+          cp /tmp/hf_readme.md README.md
+
+      - name: Push to Hugging Face Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+          HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add README.md
+          git commit -m "ci: add HF Space metadata for deployment" --allow-empty
+          git push \
+            https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME} \
+            HEAD:main --force

@@ -1,13 +1,3 @@
----
-title: Tradebot Backtest Dashboard
-emoji: 🤖
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 <div align="center">
   <h1>🤖 tradebot</h1>
   <p>
@@ -70,7 +60,7 @@ The full pipeline runs in five phases:
 | **② Core Application** | `app.py` wires the data providers together; `strategy.py` implements the SMA crossover logic |
 | **③ Development** | `backtest.py` replays history; `plot.py` saves a QF-Lib-style 6-panel report |
 | **④ Production** | `azure_function.py` deploys the bot as a serverless Azure Functions timer trigger |
-| **⑤ Monitoring** | `dashboard.py` serves a live Plotly Dash UI that reads the bot's SQLite state database |
+| **⑤ Monitoring** | `dashboard/dashboard.py` serves a live Plotly Dash UI that reads the bot's SQLite state database |
 
 ### Strategy Logic Flowchart
 
@@ -129,18 +119,22 @@ tradebot/
 │   ├── cci_strategy.py             # CCI mean reversion
 │   └── williams_r_strategy.py      # Williams %R mean reversion
 │
+├── dashboard/                      # Dashboard applications
+│   ├── backtest_dashboard.py       # Interactive public backtest dashboard (Hugging Face Spaces)
+│   ├── dashboard.py                # Live trading monitoring dashboard
+│   └── requirements.txt            # Dashboard-only dependencies
+│
+├── .github/
+│   ├── workflows/
+│   │   └── hf_sync.yml             # Auto-sync to Hugging Face Spaces on push to main
+│   └── hf_space_header.md          # HF Spaces metadata (prepended to README on sync)
+│
 ├── app.py                          # App factory – registers data providers and strategy
 ├── strategy.py                     # Original strategy (kept for backward compatibility)
 ├── backtest.py                     # Step 3 – Run a historical backtest (CLI)
 ├── plot.py                         # Step 4 – Generate QF-Lib-style performance charts
 ├── azure_function.py               # Step 5 – Azure Functions timer-trigger deployment
-├── dashboard.py                    # Step 6 – Live real-time monitoring dashboard
-├── backtest_dashboard.py           # Interactive public backtest dashboard (Plotly Dash)
-│
-├── Dockerfile                      # Hugging Face Spaces (Docker) deployment
-├── render.yaml                     # Render.com deployment config
-├── Procfile                        # Railway / Heroku deployment hook
-├── requirements-dashboard.txt      # Dashboard-only dependencies
+├── Dockerfile                      # Hugging Face Spaces (Docker) image definition
 └── docs/
     └── images/                     # Sample output images embedded in this README
 ```
@@ -291,7 +285,7 @@ def trading_bot_azure_function(myTimer: func.TimerRequest) -> None:
 
 Monitor portfolio performance, open positions, and recent trades in real time
 from any browser.  The dashboard is a self-contained [Plotly Dash](https://dash.plotly.com/)
-application (`dashboard.py`) that reads directly from the same SQLite database
+application (`dashboard/dashboard.py`) that reads directly from the same SQLite database
 written by the trading bot.
 
 ![Live trading dashboard](docs/images/dashboard.png)
@@ -307,14 +301,14 @@ trading bot (azure_function.py / app.py)
   bot_state.db  (SQLite)
         │  dashboard reads every 30 s
         ▼
-  dashboard.py  (Plotly Dash server)
+  dashboard/dashboard.py  (Plotly Dash server)
         │  serves HTTP
         ▼
   browser  →  http://127.0.0.1:8050
 ```
 
 - The bot writes a portfolio snapshot to `bot_state.db` after every strategy run.
-- `dashboard.py` connects to that database and queries the latest snapshot each time the browser polls.
+- `dashboard/dashboard.py` connects to that database and queries the latest snapshot each time the browser polls.
 - When no live database is found, the dashboard automatically enters **demo mode** so you can inspect the UI before the bot has run.
 
 ---
@@ -324,7 +318,7 @@ trading bot (azure_function.py / app.py)
 | Requirement | Notes |
 |-------------|-------|
 | Python 3.10+ | same as the bot |
-| `dashboard.py` | already in the repo root |
+| `dashboard/dashboard.py` | already in the repo |
 | `bot_state.db` | created automatically when the bot runs; dashboard works in demo mode without it |
 | Port 8050 available | or set a custom port via the `PORT` environment variable |
 
@@ -360,7 +354,7 @@ EOF
 
 ### 6.4 Set the Database Path
 
-By default `dashboard.py` looks for `bot_state.db` in the same directory as the script.
+By default `dashboard/dashboard.py` looks for `bot_state.db` in the same directory as the script.
 
 **Linux / macOS**
 
@@ -387,7 +381,7 @@ $env:DATABASE_PATH = "C:\path\to\your\bot_state.db"
 ### 6.5 Start the Dashboard
 
 ```bash
-python dashboard.py
+python dashboard/dashboard.py
 ```
 
 Expected output:
@@ -401,15 +395,15 @@ Open **http://127.0.0.1:8050** in your browser.
 To bind to a different port:
 
 ```bash
-PORT=9000 python dashboard.py          # Linux / macOS
-set PORT=9000 && python dashboard.py   # Windows CMD
+PORT=9000 python dashboard/dashboard.py          # Linux / macOS
+set PORT=9000 && python dashboard/dashboard.py   # Windows CMD
 ```
 
 To expose the dashboard on your local network (e.g. access from another device):
 
 ```bash
-# dashboard.py already uses host="0.0.0.0"; just set the port
-PORT=8050 python dashboard.py
+# dashboard/dashboard.py already uses host="0.0.0.0"; just set the port
+PORT=8050 python dashboard/dashboard.py
 # then open  http://<your-machine-ip>:8050  from any device on the same network
 ```
 
@@ -454,7 +448,7 @@ The "Last updated" timestamp in the top-right corner updates on every refresh.
 
 ### 6.7 Customise the Dashboard
 
-All tuneable constants are at the top of `dashboard.py`:
+All tuneable constants are at the top of `dashboard/dashboard.py`:
 
 ```python
 POLL_INTERVAL_MS = 30_000   # refresh interval in milliseconds
@@ -496,13 +490,13 @@ Run the bot and the dashboard side-by-side so you can monitor results in real ti
 python app.py
 
 # Terminal 2 – start the dashboard
-python dashboard.py
+python dashboard/dashboard.py
 ```
 
 **Option B — background process (Linux / macOS)**
 
 ```bash
-python dashboard.py &
+python dashboard/dashboard.py &
 echo "Dashboard PID: $!"
 ```
 
@@ -510,7 +504,7 @@ echo "Dashboard PID: $!"
 
 ```bash
 tmux new-session -d -s bot      'python app.py'
-tmux new-session -d -s dash     'python dashboard.py'
+tmux new-session -d -s dash     'python dashboard/dashboard.py'
 tmux ls          # list sessions
 tmux attach -t dash              # attach to dashboard session
 ```
@@ -535,7 +529,7 @@ User=ubuntu
 WorkingDirectory=/home/ubuntu/tradebot
 Environment="DATABASE_PATH=/home/ubuntu/tradebot/bot_state.db"
 Environment="PORT=8050"
-ExecStart=/usr/bin/python3 /home/ubuntu/tradebot/dashboard.py
+ExecStart=/usr/bin/python3 /home/ubuntu/tradebot/dashboard/dashboard.py
 Restart=always
 
 [Install]
@@ -588,7 +582,7 @@ server {
 | Page shows **"Demo mode"** even after bot ran | Bot uses a different db path | Run `ls -la *.db` in the bot directory to find the actual filename |
 | Browser shows "connection refused" | Dashboard not running / wrong port | Check the terminal; confirm port with `lsof -i :8050` |
 | KPI cards show stale data | Refresh interval too long | Reduce `POLL_INTERVAL_MS` or hard-refresh the browser |
-| `OSError: [Errno 98] Address already in use` | Port 8050 taken | `PORT=8051 python dashboard.py` |
+| `OSError: [Errno 98] Address already in use` | Port 8050 taken | `PORT=8051 python dashboard/dashboard.py` |
 
 ---
 
@@ -604,15 +598,15 @@ server {
 | `percentage_of_portfolio` | `strategy.py` | `25` | Portfolio % per buy order |
 | `fast_period` | `strategy.py` | `9` | Fast SMA period |
 | `slow_period` | `strategy.py` | `50` | Slow SMA period |
-| `POLL_INTERVAL_MS` | `dashboard.py` | `30000` | Dashboard refresh interval (ms) |
-| `PORT` | `dashboard.py` | `8050` | Dashboard HTTP port |
-| `DATABASE_PATH` | `dashboard.py` | `bot_state.db` | Path to the bot's SQLite database |
+| `POLL_INTERVAL_MS` | `dashboard/dashboard.py` | `30000` | Dashboard refresh interval (ms) |
+| `PORT` | `dashboard/dashboard.py` | `8050` | Dashboard HTTP port |
+| `DATABASE_PATH` | `dashboard/dashboard.py` | `bot_state.db` | Path to the bot's SQLite database |
 
 ---
 
 ## Backtest Dashboard
 
-`backtest_dashboard.py` is a fully standalone interactive web app that lets **anyone** run a
+`dashboard/backtest_dashboard.py` is a fully standalone interactive web app that lets **anyone** run a
 backtest in their browser — no Python or API keys required.
 
 **Features:**
@@ -627,7 +621,21 @@ backtest in their browser — no Python or API keys required.
 ### Run Locally
 
 ```bash
-pip install -r requirements-dashboard.txt
-python backtest_dashboard.py      # → http://127.0.0.1:8050
+pip install -r dashboard/requirements.txt
+python dashboard/backtest_dashboard.py      # → http://127.0.0.1:8050
 ```
+
+### Hugging Face Spaces
+
+The dashboard is automatically deployed to Hugging Face Spaces on every push to `main`
+via the `.github/workflows/hf_sync.yml` workflow.
+
+**One-time setup (3 minutes):**
+
+1. Create a write token at **[huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)**.
+2. In this GitHub repository go to **Settings → Secrets → Actions** and add:
+   - `HF_TOKEN` — your HuggingFace write token
+   - `HF_USERNAME` — your HuggingFace username
+   - `HF_SPACE_NAME` — the name of your Space (e.g. `tradebot-backtest`)
+3. Push any commit to `main`. The workflow runs automatically and your Space is live.
 
