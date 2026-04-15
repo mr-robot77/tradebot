@@ -4,12 +4,13 @@
     An automated cryptocurrency trading bot with eight built-in strategies,
     built with the
     <a href="https://github.com/coding-kitties/investing-algorithm-framework">investing-algorithm-framework v8</a>
-    and a public interactive backtest dashboard.
+    and a public interactive backtest dashboard hosted on Hugging Face Spaces.
   </p>
   <p>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python">
     <img src="https://img.shields.io/badge/Exchanges-Binance%20%7C%20Kraken%20%7C%20Bitvavo%20%7C%20more-orange?style=flat-square" alt="Exchanges">
     <img src="https://img.shields.io/badge/Strategies-8-green?style=flat-square" alt="Strategies">
+    <img src="https://img.shields.io/badge/Dashboard-HuggingFace%20Spaces-yellow?style=flat-square&logo=huggingface" alt="HuggingFace Spaces">
   </p>
 </div>
 
@@ -119,21 +120,21 @@ tradebot/
 │   └── williams_r_strategy.py      # Williams %R mean reversion
 │
 ├── dashboard/                      # Dashboard applications
-│   ├── backtest_dashboard.py       # Interactive public backtest dashboard
+│   ├── backtest_dashboard.py       # Interactive public backtest dashboard (Hugging Face Spaces)
 │   ├── dashboard.py                # Live trading monitoring dashboard
 │   └── requirements.txt            # Dashboard-only dependencies
 │
 ├── .github/
 │   ├── workflows/
-│   │   └── hf_sync.yml             # Auto-sync workflow (push to external hosting on main)
-│   └── hf_space_header.md          # Space metadata (prepended to README on sync)
+│   │   └── hf_sync.yml             # Auto-sync to Hugging Face Spaces on push to main
+│   └── hf_space_header.md          # HF Spaces metadata (prepended to README on sync)
 │
 ├── app.py                          # App factory – registers data providers and strategy
 ├── strategy.py                     # Original strategy (kept for backward compatibility)
 ├── backtest.py                     # Step 3 – Run a historical backtest (CLI)
 ├── plot.py                         # Step 4 – Generate QF-Lib-style performance charts
 ├── azure_function.py               # Step 5 – Azure Functions timer-trigger deployment
-├── Dockerfile                      # Docker image definition (for hosted deployment)
+├── Dockerfile                      # Hugging Face Spaces (Docker) image definition
 └── docs/
     └── images/                     # Sample output images embedded in this README
 ```
