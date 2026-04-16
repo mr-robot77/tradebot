@@ -170,6 +170,24 @@ TICKERS = [
     {"label": "BNB/BTC   — BNB vs BTC",      "value": "BNB/BTC"},
 ]
 
+# ──────────────────────────────────────────────── quote currency filter ─────── #
+
+QUOTE_CURRENCIES = [
+    {"label": "USDT — Tether (most exchanges)",  "value": "USDT"},
+    {"label": "USD  — US Dollar (Kraken, Bitfinex)", "value": "USD"},
+    {"label": "EUR  — Euro (Bitvavo, Kraken)",    "value": "EUR"},
+]
+
+_DEFAULT_QUOTE = "USDT"
+_DEFAULT_EXCHANGE = "kucoin"   # globally accessible, supports all USDT pairs
+
+
+def _tickers_for_quote(quote: str) -> list[dict]:
+    """Return the TICKERS subset whose quote currency matches *quote*."""
+    suffix = f"/{quote}"
+    return [t for t in TICKERS if t["value"].endswith(suffix)]
+
+
 # ────────────────────────────────────────────────── colour palette ─────────── #
 
 ACCENT = "#1f6fb2"
@@ -653,15 +671,23 @@ _sidebar = html.Div(
         _field("Exchange", dcc.Dropdown(
             id="dd-exchange",
             options=EXCHANGES,
-            value="kucoin",
+            value=_DEFAULT_EXCHANGE,
             clearable=False,
             searchable=True,
             style=_DD,
         )),
 
+        _field("Quote Currency", dcc.Dropdown(
+            id="dd-quote",
+            options=QUOTE_CURRENCIES,
+            value=_DEFAULT_QUOTE,
+            clearable=False,
+            style=_DD,
+        )),
+
         _field("Ticker", dcc.Dropdown(
             id="dd-symbol",
-            options=TICKERS,
+            options=_tickers_for_quote(_DEFAULT_QUOTE),
             value="BTC/USDT",
             clearable=False,
             searchable=True,
@@ -929,6 +955,25 @@ def sync_params_ui(strategy: str):
         info["p2"][1],
         p3_val,
     )
+
+
+@app.callback(
+    Output("dd-symbol", "options"),
+    Output("dd-symbol", "value"),
+    Input("dd-quote",   "value"),
+    State("dd-symbol",  "value"),
+)
+def filter_symbols_by_quote(quote: str, current_symbol: str):
+    """Refresh the Ticker dropdown whenever the Quote Currency selector changes."""
+    options = _tickers_for_quote(quote)
+    # Keep the current symbol if it's still valid for the new quote currency;
+    # otherwise default to the first option in the filtered list.
+    valid_values = {o["value"] for o in options}
+    if options:
+        new_value = current_symbol if current_symbol in valid_values else options[0]["value"]
+    else:
+        new_value = current_symbol
+    return options, new_value
 
 
 @app.callback(
