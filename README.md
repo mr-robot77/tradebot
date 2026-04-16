@@ -129,7 +129,8 @@ tradebot/
 │
 ├── .github/
 │   ├── workflows/
-│   │   └── hf_sync.yml             # Auto-sync to Hugging Face Spaces on push to main
+│   │   ├── hf_sync.yml             # Sync to Hugging Face Spaces (push to main + weekly schedule)
+│   │   └── hf_status.yml           # Periodic health-check of the HF Space (every 6 hours)
 │   └── hf_space_header.md          # HF Spaces metadata (prepended to README on sync)
 │
 ├── app.py                          # App factory – registers data providers and strategy
@@ -616,7 +617,10 @@ backtest in their browser — no Python or API keys required.
 
 🚀 **[https://huggingface.co/spaces/mrrobot777/tradebot](https://huggingface.co/spaces/mrrobot777/tradebot)**
 
-The dashboard is hosted on Hugging Face Spaces and updated automatically on every push to `main`.
+The dashboard is hosted on Hugging Face Spaces and updated automatically on every push to `main`
+and on a weekly schedule (every Monday at 03:00 UTC).
+
+![Hugging Face dashboard output](https://github.com/user-attachments/assets/bf466934-d2a5-40fd-a786-267a154070af)
 
 **Features:**
 - 8 strategies with editable parameters
