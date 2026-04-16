@@ -620,14 +620,15 @@ backtest in their browser — no Python or API keys required.
 The dashboard is hosted on Hugging Face Spaces and updated automatically on every push to `main`
 and on a weekly schedule (every Monday at 03:00 UTC).
 
-![Hugging Face dashboard output](docs/images/backtest-dashboard-output.png)
+![Backtest dashboard demo – KuCoin · BTC/USDT · Bollinger Bands strategy](docs/images/backtest-dashboard-demo.gif)
 
 **Features:**
-- 8 strategies with editable parameters
-- 30+ pre-loaded tickers (BTC, ETH, SOL, DOGE, UNI, …) plus free-text entry
-- 8 exchanges (Binance, Kraken, KuCoin, Bybit, OKX, Bitvavo, Bitfinex, Gate.io)
+- 8 strategies with editable parameters (default: **KuCoin · USDT · BTC/USDT · Golden Cross**)
+- Quote Currency selector (USDT / USD / EUR) that filters the symbol list automatically
+- 9 exchanges: KuCoin, OKX, Gate.io, Binance, Binance US, Bybit, Kraken, Bitvavo, Bitfinex
+- 30+ pre-loaded tickers (BTC, ETH, SOL, DOGE, UNI, …) grouped by USDT / USD / EUR quote
 - Timeframes: 15m, 1h, 4h, 1d, 1w
-- Plotly dark theme charts: equity curve + monthly returns heatmap
+- Plotly dark-theme charts: equity curve + monthly returns heatmap
 - KPI cards: total return, final value, Sharpe ratio, max drawdown, win rate, # trades
 - Colour-coded trades log table
 
