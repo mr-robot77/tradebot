@@ -620,7 +620,7 @@ backtest in their browser — no Python or API keys required.
 The dashboard is hosted on Hugging Face Spaces and updated automatically on every push to `main`
 and on a weekly schedule (every Monday at 03:00 UTC).
 
-![Hugging Face dashboard output](https://github.com/user-attachments/assets/bf466934-d2a5-40fd-a786-267a154070af)
+![Hugging Face dashboard output](docs/images/backtest-dashboard-output.png)
 
 **Features:**
 - 8 strategies with editable parameters
