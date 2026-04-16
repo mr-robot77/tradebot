@@ -1,0 +1,71 @@
+/*
+ * dark-dropdown.css
+ *
+ * Forces Dash dcc.Dropdown option menus into dark mode so they remain
+ * readable on dark-background deployments (e.g. Hugging Face Spaces).
+ *
+ * Dash 2.x uses react-select v4/v5; the internal class names for the
+ * option list are not affected by the `style=` prop on dcc.Dropdown, so
+ * we target them here directly.
+ */
+
+/* ── Option menu container ── */
+.Select-menu-outer,
+.dash-dropdown .Select-menu-outer {
+    background-color: #21262d !important;
+    border: 1px solid #30363d !important;
+    z-index: 9999 !important;
+}
+
+/* ── Individual options (react-select v2/v3 Virtualized) ── */
+.VirtualizedSelectOption {
+    background-color: #21262d !important;
+    color: #e6edf3 !important;
+}
+
+.VirtualizedSelectFocusedOption {
+    background-color: #2d333b !important;
+    color: #e6edf3 !important;
+    cursor: pointer !important;
+}
+
+.VirtualizedSelectSelectedOption,
+.VirtualizedSelectSelectedOption.VirtualizedSelectFocusedOption {
+    background-color: #1f6fb2 !important;
+    color: #ffffff !important;
+}
+
+.VirtualizedSelectDisabledOption {
+    background-color: #21262d !important;
+    color: #8b949e !important;
+}
+
+/* ── Selected value label ── */
+.Select-value-label,
+.Select--single > .Select-control .Select-value .Select-value-label {
+    color: #e6edf3 !important;
+}
+
+/* ── Placeholder text ── */
+.Select-placeholder {
+    color: #8b949e !important;
+}
+
+/* ── Typed search input ── */
+.Select-input > input {
+    color: #e6edf3 !important;
+    background-color: transparent !important;
+}
+
+/* ── Arrow/indicator ── */
+.Select-arrow-zone .Select-arrow {
+    border-top-color: #8b949e !important;
+}
+
+/* ── Clear button ── */
+.Select-clear-zone .Select-clear {
+    color: #8b949e !important;
+}
+.Select-clear-zone:hover .Select-clear {
+    color: #e6edf3 !important;
+}

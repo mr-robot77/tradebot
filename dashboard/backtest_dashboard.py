@@ -100,15 +100,15 @@ _S = {
 # ─────────────────────────────────────────────────── exchange catalogue ───── #
 
 EXCHANGES = [
+    {"label": "KuCoin",      "value": "kucoin"},
+    {"label": "OKX",         "value": "okx"},
+    {"label": "Gate.io",     "value": "gateio"},
     {"label": "Kraken",      "value": "kraken"},
     {"label": "Binance",     "value": "binance"},
     {"label": "Binance US",  "value": "binanceus"},
-    {"label": "KuCoin",      "value": "kucoin"},
     {"label": "Bybit",       "value": "bybit"},
-    {"label": "OKX",         "value": "okx"},
     {"label": "Bitvavo",     "value": "bitvavo"},
     {"label": "Bitfinex",    "value": "bitfinex"},
-    {"label": "Gate.io",     "value": "gateio"},
 ]
 
 TIMEFRAMES = [
@@ -214,13 +214,28 @@ def fetch_ohlcv(exchange_id: str, symbol: str, timeframe: str,
         raise ValueError(
             f"{exchange_id} is not accessible from your location (HTTP 451 – geo-restriction). "
             "If you are in the US, try selecting 'Binance US' instead. "
-            "Otherwise, switch to an unrestricted exchange such as Kraken, KuCoin, or Bybit."
+            "Otherwise, switch to an unrestricted exchange such as KuCoin, OKX, or Gate.io."
+        )
+    except ccxt.errors.ExchangeNotAvailable:
+        raise ValueError(
+            f"{exchange_id} is temporarily unavailable or is blocking requests from this server. "
+            "Try switching to KuCoin, OKX, or Gate.io."
         )
     except ccxt.errors.PermissionDenied:
         raise ValueError(
             f"Access denied by {exchange_id}. "
             "The exchange may be blocking requests from your region. "
-            "Try switching to Kraken, KuCoin, or Bybit."
+            "Try switching to KuCoin, OKX, or Gate.io."
+        )
+    except ccxt.errors.BadSymbol:
+        hint = ""
+        if exchange_id == "bitvavo":
+            hint = " Bitvavo uses EUR pairs (e.g. BTC/EUR)."
+        elif exchange_id == "kraken":
+            hint = " Kraken uses USD pairs (e.g. BTC/USD)."
+        raise ValueError(
+            f"'{symbol}' is not available on {exchange_id}.{hint} "
+            "Please choose a symbol supported by this exchange."
         )
 
     if not rows:
@@ -613,7 +628,7 @@ _sidebar = html.Div(
         _field("Exchange", dcc.Dropdown(
             id="dd-exchange",
             options=EXCHANGES,
-            value="kraken",
+            value="kucoin",
             clearable=False,
             searchable=True,
             style=_DD,
