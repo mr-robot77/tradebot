@@ -1,0 +1,48 @@
+name: Check HuggingFace Space Status
+
+# Periodically checks that the HF Space dashboard is up and reachable.
+# Runs automatically every 6 hours and can be triggered manually at any time.
+#
+# Space URL: https://huggingface.co/spaces/mrrobot777/tradebot
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # every 6 hours
+  workflow_dispatch:
+
+env:
+  HF_USERNAME: mrrobot777
+  HF_SPACE_NAME: tradebot
+
+jobs:
+  check-status:
+    name: HuggingFace Space Health Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check HF Space availability
+        id: hf_check
+        run: |
+          SPACE_URL="https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
+          echo "Checking: ${SPACE_URL}"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "${SPACE_URL}")
+          echo "http_code=${HTTP_CODE}" >> "$GITHUB_OUTPUT"
+          echo "space_url=${SPACE_URL}"  >> "$GITHUB_OUTPUT"
+          echo "HTTP status: ${HTTP_CODE}"
+
+      - name: Report status
+        run: |
+          SPACE_URL="${{ steps.hf_check.outputs.space_url }}"
+          HTTP_CODE="${{ steps.hf_check.outputs.http_code }}"
+          if [ "${HTTP_CODE}" -ge 200 ] && [ "${HTTP_CODE}" -lt 400 ]; then
+            echo "✅ HuggingFace Space is ONLINE"
+            echo "   URL         : ${SPACE_URL}"
+            echo "   HTTP status : ${HTTP_CODE}"
+          else
+            echo "❌ HuggingFace Space returned HTTP ${HTTP_CODE}"
+            echo "   URL : ${SPACE_URL}"
+            echo "The space may be sleeping, rebuilding, or unavailable."
+            exit 1
+          fi

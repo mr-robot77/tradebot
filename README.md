@@ -10,7 +10,9 @@
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python">
     <img src="https://img.shields.io/badge/Exchanges-Binance%20%7C%20Kraken%20%7C%20Bitvavo%20%7C%20more-orange?style=flat-square" alt="Exchanges">
     <img src="https://img.shields.io/badge/Strategies-8-green?style=flat-square" alt="Strategies">
-    <img src="https://img.shields.io/badge/Dashboard-HuggingFace%20Spaces-yellow?style=flat-square&logo=huggingface" alt="HuggingFace Spaces">
+    <a href="https://huggingface.co/spaces/mrrobot777/tradebot">
+      <img src="https://img.shields.io/badge/Dashboard-HuggingFace%20Spaces-yellow?style=flat-square&logo=huggingface" alt="HuggingFace Spaces">
+    </a>
   </p>
 </div>
 
@@ -609,6 +611,12 @@ server {
 
 `dashboard/backtest_dashboard.py` is a fully standalone interactive web app that lets **anyone** run a
 backtest in their browser — no Python or API keys required.
+
+### Live Demo
+
+🚀 **[https://huggingface.co/spaces/mrrobot777/tradebot](https://huggingface.co/spaces/mrrobot777/tradebot)**
+
+The dashboard is hosted on Hugging Face Spaces and updated automatically on every push to `main`.
 
 **Features:**
 - 8 strategies with editable parameters
