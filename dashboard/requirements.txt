@@ -25,5 +25,5 @@ ccxt>=4.3,<5.0
 
 # Data + indicators (wheels commonly available; no local compilation required on common platforms)
 pandas>=2.2,<3.0
-numpy>=1.26
+numpy>=1.26,<3.0
 pandas-ta>=0.3.14b
