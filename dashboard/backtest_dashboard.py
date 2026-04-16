@@ -155,6 +155,11 @@ TICKERS = [
     {"label": "BCH/USDT  — Bitcoin Cash",    "value": "BCH/USDT"},
     {"label": "XLM/USDT  — Stellar",         "value": "XLM/USDT"},
     {"label": "VET/USDT  — VeChain",         "value": "VET/USDT"},
+    # ── USD pairs (Kraken / Bitfinex) ───────────────────────────────────────
+    {"label": "BTC/USD   — Bitcoin (USD)",   "value": "BTC/USD"},
+    {"label": "ETH/USD   — Ethereum (USD)",  "value": "ETH/USD"},
+    {"label": "XRP/USD   — XRP (USD)",       "value": "XRP/USD"},
+    {"label": "LTC/USD   — Litecoin (USD)",  "value": "LTC/USD"},
     # ── EUR pairs (Bitvavo / Kraken) ────────────────────────────────────────
     {"label": "BTC/EUR   — Bitcoin (EUR)",   "value": "BTC/EUR"},
     {"label": "ETH/EUR   — Ethereum (EUR)",  "value": "ETH/EUR"},
@@ -230,12 +235,32 @@ def fetch_ohlcv(exchange_id: str, symbol: str, timeframe: str,
     except ccxt.errors.BadSymbol:
         hint = ""
         if exchange_id == "bitvavo":
-            hint = " Bitvavo uses EUR pairs (e.g. BTC/EUR)."
+            hint = " Bitvavo uses EUR pairs — select BTC/EUR or ETH/EUR from the Symbol dropdown."
         elif exchange_id == "kraken":
-            hint = " Kraken uses USD pairs (e.g. BTC/USD)."
+            hint = " Kraken uses USD pairs — select BTC/USD or ETH/USD from the Symbol dropdown."
         raise ValueError(
             f"'{symbol}' is not available on {exchange_id}.{hint} "
             "Please choose a symbol supported by this exchange."
+        )
+    except ccxt.errors.RequestTimeout:
+        raise ValueError(
+            f"Request timed out while connecting to {exchange_id}. "
+            "The exchange may be slow or unreachable. Try again or switch to KuCoin, OKX, or Gate.io."
+        )
+    except ccxt.errors.DDoSProtection:
+        raise ValueError(
+            f"{exchange_id} is rate-limiting requests from this server. "
+            "Wait a moment and try again, or switch to KuCoin, OKX, or Gate.io."
+        )
+    except ccxt.errors.NetworkError:
+        raise ValueError(
+            f"A network error occurred while connecting to {exchange_id}. "
+            "The exchange may be unreachable. Try again or switch to KuCoin, OKX, or Gate.io."
+        )
+    except ccxt.errors.ExchangeError:
+        raise ValueError(
+            f"An unexpected error was returned by {exchange_id}. "
+            "Try a different symbol, date range, or exchange."
         )
 
     if not rows:
