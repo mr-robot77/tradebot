@@ -1,0 +1,315 @@
+# Instincts generated from https://github.com/mr-robot77/tradebot
+# Generated: 2026-04-16T08:45:34.210Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: tradebot-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/mr-robot77/tradebot
+---
+
+# Tradebot Commit Length
+
+## Action
+
+Keep commit messages concise (~41 characters)
+
+## Evidence
+
+- Average commit message length: 41 chars
+- Based on 2 commits
+
+---
+id: tradebot-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/mr-robot77/tradebot
+---
+
+# Tradebot Naming Files
+
+## Action
+
+Use snake_case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: snake_case
+
+---
+id: tradebot-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/mr-robot77/tradebot
+---
+
+# Tradebot Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: tradebot-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/mr-robot77/tradebot
+---
+
+# Tradebot Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: tradebot-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/mr-robot77/tradebot
+---
+
+# Tradebot Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: tradebot-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct File Naming
+
+## Action
+
+Name the file using snake_case
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: tradebot-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct Function Naming
+
+## Action
+
+Use camelCase for the function name
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: tradebot-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct Class Naming
+
+## Action
+
+Use PascalCase for the class name
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: tradebot-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for the constant name
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: tradebot-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle
+
+---
+id: tradebot-instinct-export-style
+trigger: "When exporting from a module"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle
+
+---
+id: tradebot-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct Test Location
+
+## Action
+
+Place test files in a separate folder from source code
+
+## Evidence
+
+- Pattern in architecture.testLocation
+
+---
+id: tradebot-instinct-git-commit-prefix
+trigger: "When making a commit related to CI"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct Git Commit Prefix
+
+## Action
+
+Prefix the commit message with 'ci:'
+
+## Evidence
+
+- Seen in commit 'ci: add HuggingFace sync/status workflows and dashboard URL in README'
+
+---
+id: tradebot-instinct-git-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct Git Commit Length
+
+## Action
+
+Keep the commit message concise, around 40 characters on average
+
+## Evidence
+
+- Pattern in commits.averageLength
+
+---
+id: tradebot-instinct-workflow-hf-status
+trigger: "When configuring CI for HuggingFace status checks"
+confidence: 0.8
+domain: workflow
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct Workflow Hf Status
+
+## Action
+
+Use the workflow file '.github/workflows/hf_status.yml'
+
+## Evidence
+
+- Pattern in configFiles: .github/workflows/hf_status.yml
+
+---
+id: tradebot-instinct-workflow-hf-sync
+trigger: "When configuring CI for HuggingFace synchronization"
+confidence: 0.8
+domain: workflow
+source: repo-analysis
+source_repo: mr-robot77/tradebot
+---
+
+# Tradebot Instinct Workflow Hf Sync
+
+## Action
+
+Use the workflow file '.github/workflows/hf_sync.yml'
+
+## Evidence
+
+- Pattern in configFiles: .github/workflows/hf_sync.yml
+
