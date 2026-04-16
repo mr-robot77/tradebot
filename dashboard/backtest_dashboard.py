@@ -100,14 +100,15 @@ _S = {
 # ─────────────────────────────────────────────────── exchange catalogue ───── #
 
 EXCHANGES = [
-    {"label": "Binance",   "value": "binance"},
-    {"label": "Kraken",    "value": "kraken"},
-    {"label": "KuCoin",    "value": "kucoin"},
-    {"label": "Bybit",     "value": "bybit"},
-    {"label": "OKX",       "value": "okx"},
-    {"label": "Bitvavo",   "value": "bitvavo"},
-    {"label": "Bitfinex",  "value": "bitfinex"},
-    {"label": "Gate.io",   "value": "gateio"},
+    {"label": "Kraken",      "value": "kraken"},
+    {"label": "Binance",     "value": "binance"},
+    {"label": "Binance US",  "value": "binanceus"},
+    {"label": "KuCoin",      "value": "kucoin"},
+    {"label": "Bybit",       "value": "bybit"},
+    {"label": "OKX",         "value": "okx"},
+    {"label": "Bitvavo",     "value": "bitvavo"},
+    {"label": "Bitfinex",    "value": "bitfinex"},
+    {"label": "Gate.io",     "value": "gateio"},
 ]
 
 TIMEFRAMES = [
@@ -188,23 +189,39 @@ def fetch_ohlcv(exchange_id: str, symbol: str, timeframe: str,
     Returns a DataFrame indexed by UTC timestamp with columns:
         open, high, low, close, volume (all float64).
     """
-    exchange = getattr(ccxt, exchange_id)({"enableRateLimit": True})
+    try:
+        exchange = getattr(ccxt, exchange_id)({"enableRateLimit": True})
+    except AttributeError:
+        raise ValueError(f"Unknown exchange: '{exchange_id}'. Please select a valid exchange.")
 
     since_ms = int(start_dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
     until_ms = int(end_dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
 
     rows, cursor = [], since_ms
-    while cursor < until_ms:
-        candles = exchange.fetch_ohlcv(
-            symbol, timeframe=timeframe, since=cursor, limit=1_000
+    try:
+        while cursor < until_ms:
+            candles = exchange.fetch_ohlcv(
+                symbol, timeframe=timeframe, since=cursor, limit=1_000
+            )
+            if not candles:
+                break
+            rows.extend(candles)
+            new_cursor = candles[-1][0]
+            if new_cursor >= until_ms or new_cursor == cursor:
+                break
+            cursor = new_cursor + 1
+    except ccxt.errors.RestrictedLocation:
+        raise ValueError(
+            f"{exchange_id} is not accessible from your location (HTTP 451 – geo-restriction). "
+            "If you are in the US, try selecting 'Binance US' instead. "
+            "Otherwise, switch to an unrestricted exchange such as Kraken, KuCoin, or Bybit."
         )
-        if not candles:
-            break
-        rows.extend(candles)
-        new_cursor = candles[-1][0]
-        if new_cursor >= until_ms or new_cursor == cursor:
-            break
-        cursor = new_cursor + 1
+    except ccxt.errors.PermissionDenied:
+        raise ValueError(
+            f"Access denied by {exchange_id}. "
+            "The exchange may be blocking requests from your region. "
+            "Try switching to Kraken, KuCoin, or Bybit."
+        )
 
     if not rows:
         raise ValueError(
@@ -596,7 +613,7 @@ _sidebar = html.Div(
         _field("Exchange", dcc.Dropdown(
             id="dd-exchange",
             options=EXCHANGES,
-            value="binance",
+            value="kraken",
             clearable=False,
             searchable=True,
             style=_DD,
