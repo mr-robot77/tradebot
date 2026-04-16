@@ -23,7 +23,7 @@ gunicorn>=22.0,<24.0
 # Market data
 ccxt>=4.3,<5.0
 
-# Data + indicators (pure Python — no C extension required)
+# Data + indicators (wheels commonly available; no local compilation required on common platforms)
 pandas>=2.2,<3.0
 numpy>=1.26
 pandas-ta>=0.3.14b
