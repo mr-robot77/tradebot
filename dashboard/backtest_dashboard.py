@@ -100,14 +100,15 @@ _S = {
 # ─────────────────────────────────────────────────── exchange catalogue ───── #
 
 EXCHANGES = [
-    {"label": "Binance",   "value": "binance"},
-    {"label": "Kraken",    "value": "kraken"},
-    {"label": "KuCoin",    "value": "kucoin"},
-    {"label": "Bybit",     "value": "bybit"},
-    {"label": "OKX",       "value": "okx"},
-    {"label": "Bitvavo",   "value": "bitvavo"},
-    {"label": "Bitfinex",  "value": "bitfinex"},
-    {"label": "Gate.io",   "value": "gateio"},
+    {"label": "KuCoin",      "value": "kucoin"},
+    {"label": "OKX",         "value": "okx"},
+    {"label": "Gate.io",     "value": "gateio"},
+    {"label": "Kraken",      "value": "kraken"},
+    {"label": "Binance",     "value": "binance"},
+    {"label": "Binance US",  "value": "binanceus"},
+    {"label": "Bybit",       "value": "bybit"},
+    {"label": "Bitvavo",     "value": "bitvavo"},
+    {"label": "Bitfinex",    "value": "bitfinex"},
 ]
 
 TIMEFRAMES = [
@@ -154,6 +155,11 @@ TICKERS = [
     {"label": "BCH/USDT  — Bitcoin Cash",    "value": "BCH/USDT"},
     {"label": "XLM/USDT  — Stellar",         "value": "XLM/USDT"},
     {"label": "VET/USDT  — VeChain",         "value": "VET/USDT"},
+    # ── USD pairs (Kraken / Bitfinex) ───────────────────────────────────────
+    {"label": "BTC/USD   — Bitcoin (USD)",   "value": "BTC/USD"},
+    {"label": "ETH/USD   — Ethereum (USD)",  "value": "ETH/USD"},
+    {"label": "XRP/USD   — XRP (USD)",       "value": "XRP/USD"},
+    {"label": "LTC/USD   — Litecoin (USD)",  "value": "LTC/USD"},
     # ── EUR pairs (Bitvavo / Kraken) ────────────────────────────────────────
     {"label": "BTC/EUR   — Bitcoin (EUR)",   "value": "BTC/EUR"},
     {"label": "ETH/EUR   — Ethereum (EUR)",  "value": "ETH/EUR"},
@@ -163,6 +169,24 @@ TICKERS = [
     {"label": "SOL/BTC   — SOL vs BTC",      "value": "SOL/BTC"},
     {"label": "BNB/BTC   — BNB vs BTC",      "value": "BNB/BTC"},
 ]
+
+# ──────────────────────────────────────────────── quote currency filter ─────── #
+
+QUOTE_CURRENCIES = [
+    {"label": "USDT — Tether (most exchanges)",  "value": "USDT"},
+    {"label": "USD  — US Dollar (Kraken, Bitfinex)", "value": "USD"},
+    {"label": "EUR  — Euro (Bitvavo, Kraken)",    "value": "EUR"},
+]
+
+_DEFAULT_QUOTE = "USDT"
+_DEFAULT_EXCHANGE = "kucoin"   # globally accessible, supports all USDT pairs
+
+
+def _tickers_for_quote(quote: str) -> list[dict]:
+    """Return the TICKERS subset whose quote currency matches *quote*."""
+    suffix = f"/{quote}"
+    return [t for t in TICKERS if t["value"].endswith(suffix)]
+
 
 # ────────────────────────────────────────────────── colour palette ─────────── #
 
@@ -188,23 +212,74 @@ def fetch_ohlcv(exchange_id: str, symbol: str, timeframe: str,
     Returns a DataFrame indexed by UTC timestamp with columns:
         open, high, low, close, volume (all float64).
     """
-    exchange = getattr(ccxt, exchange_id)({"enableRateLimit": True})
+    try:
+        exchange = getattr(ccxt, exchange_id)({"enableRateLimit": True})
+    except AttributeError:
+        raise ValueError(f"Unknown exchange: '{exchange_id}'. Please select a valid exchange.")
 
     since_ms = int(start_dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
     until_ms = int(end_dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
 
     rows, cursor = [], since_ms
-    while cursor < until_ms:
-        candles = exchange.fetch_ohlcv(
-            symbol, timeframe=timeframe, since=cursor, limit=1_000
+    try:
+        while cursor < until_ms:
+            candles = exchange.fetch_ohlcv(
+                symbol, timeframe=timeframe, since=cursor, limit=1_000
+            )
+            if not candles:
+                break
+            rows.extend(candles)
+            new_cursor = candles[-1][0]
+            if new_cursor >= until_ms or new_cursor == cursor:
+                break
+            cursor = new_cursor + 1
+    except ccxt.errors.RestrictedLocation:
+        raise ValueError(
+            f"{exchange_id} is not accessible from your location (HTTP 451 – geo-restriction). "
+            "If you are in the US, try selecting 'Binance US' instead. "
+            "Otherwise, switch to an unrestricted exchange such as KuCoin, OKX, or Gate.io."
         )
-        if not candles:
-            break
-        rows.extend(candles)
-        new_cursor = candles[-1][0]
-        if new_cursor >= until_ms or new_cursor == cursor:
-            break
-        cursor = new_cursor + 1
+    except ccxt.errors.ExchangeNotAvailable:
+        raise ValueError(
+            f"{exchange_id} is temporarily unavailable or is blocking requests from this server. "
+            "Try switching to KuCoin, OKX, or Gate.io."
+        )
+    except ccxt.errors.PermissionDenied:
+        raise ValueError(
+            f"Access denied by {exchange_id}. "
+            "The exchange may be blocking requests from your region. "
+            "Try switching to KuCoin, OKX, or Gate.io."
+        )
+    except ccxt.errors.BadSymbol:
+        hint = ""
+        if exchange_id == "bitvavo":
+            hint = " Bitvavo uses EUR pairs — select BTC/EUR or ETH/EUR from the Symbol dropdown."
+        elif exchange_id == "kraken":
+            hint = " Kraken uses USD pairs — select BTC/USD or ETH/USD from the Symbol dropdown."
+        raise ValueError(
+            f"'{symbol}' is not available on {exchange_id}.{hint} "
+            "Please choose a symbol supported by this exchange."
+        )
+    except ccxt.errors.RequestTimeout:
+        raise ValueError(
+            f"Request timed out while connecting to {exchange_id}. "
+            "The exchange may be slow or unreachable. Try again or switch to KuCoin, OKX, or Gate.io."
+        )
+    except ccxt.errors.DDoSProtection:
+        raise ValueError(
+            f"{exchange_id} is rate-limiting requests from this server. "
+            "Wait a moment and try again, or switch to KuCoin, OKX, or Gate.io."
+        )
+    except ccxt.errors.NetworkError:
+        raise ValueError(
+            f"A network error occurred while connecting to {exchange_id}. "
+            "The exchange may be unreachable. Try again or switch to KuCoin, OKX, or Gate.io."
+        )
+    except ccxt.errors.ExchangeError:
+        raise ValueError(
+            f"An unexpected error was returned by {exchange_id}. "
+            "Try a different symbol, date range, or exchange."
+        )
 
     if not rows:
         raise ValueError(
@@ -596,15 +671,23 @@ _sidebar = html.Div(
         _field("Exchange", dcc.Dropdown(
             id="dd-exchange",
             options=EXCHANGES,
-            value="binance",
+            value=_DEFAULT_EXCHANGE,
             clearable=False,
             searchable=True,
             style=_DD,
         )),
 
+        _field("Quote Currency", dcc.Dropdown(
+            id="dd-quote",
+            options=QUOTE_CURRENCIES,
+            value=_DEFAULT_QUOTE,
+            clearable=False,
+            style=_DD,
+        )),
+
         _field("Ticker", dcc.Dropdown(
             id="dd-symbol",
-            options=TICKERS,
+            options=_tickers_for_quote(_DEFAULT_QUOTE),
             value="BTC/USDT",
             clearable=False,
             searchable=True,
@@ -872,6 +955,25 @@ def sync_params_ui(strategy: str):
         info["p2"][1],
         p3_val,
     )
+
+
+@app.callback(
+    Output("dd-symbol", "options"),
+    Output("dd-symbol", "value"),
+    Input("dd-quote",   "value"),
+    State("dd-symbol",  "value"),
+)
+def filter_symbols_by_quote(quote: str, current_symbol: str):
+    """Refresh the Ticker dropdown whenever the Quote Currency selector changes."""
+    options = _tickers_for_quote(quote)
+    # Keep the current symbol if it's still valid for the new quote currency;
+    # otherwise default to the first option in the filtered list.
+    valid_values = {o["value"] for o in options}
+    if options:
+        new_value = current_symbol if current_symbol in valid_values else options[0]["value"]
+    else:
+        new_value = current_symbol
+    return options, new_value
 
 
 @app.callback(
