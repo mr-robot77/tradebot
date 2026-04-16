@@ -1,6 +1,7 @@
 name: Sync to Hugging Face Spaces
 
-# Pushes only HF-related files to the HF Space on every push to main.
+# Pushes only HF-related files to the HF Space on every push to main
+# and on a weekly schedule (every Monday at 03:00 UTC).
 # Only the files required to run the Space are synced:
 #   - Dockerfile
 #   - dashboard/ (app code and dependencies)
@@ -19,6 +20,8 @@ on:
       - "dashboard/**"
       - "README.md"
       - ".github/hf_space_header.md"
+  schedule:
+    - cron: "0 3 * * 1"   # every Monday at 03:00 UTC
   workflow_dispatch:
 
 env:
