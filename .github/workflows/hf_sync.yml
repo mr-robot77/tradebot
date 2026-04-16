@@ -1,6 +1,11 @@
 name: Sync to Hugging Face Spaces
 
-# Pushes this repository to the HF Space on every push to main.
+# Pushes only HF-related files to the HF Space on every push to main.
+# Only the files required to run the Space are synced:
+#   - Dockerfile
+#   - dashboard/ (app code and dependencies)
+#   - README.md  (with HF Space metadata header prepended)
+#
 # Required secret (set in Settings → Secrets → Actions):
 #   HF_TOKEN  – HuggingFace write token (https://huggingface.co/settings/tokens)
 #
@@ -9,6 +14,11 @@ name: Sync to Hugging Face Spaces
 on:
   push:
     branches: [main]
+    paths:
+      - "Dockerfile"
+      - "dashboard/**"
+      - "README.md"
+      - ".github/hf_space_header.md"
   workflow_dispatch:
 
 env:
@@ -25,21 +35,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
-      - name: Prepend HF Space metadata to README
+      - name: Build HF Space staging directory
         run: |
-          cat .github/hf_space_header.md README.md > /tmp/hf_readme.md
-          cp /tmp/hf_readme.md README.md
+          mkdir /tmp/hf_space
+          cp Dockerfile /tmp/hf_space/
+          cp -r dashboard /tmp/hf_space/
+          cat .github/hf_space_header.md README.md > /tmp/hf_space/README.md
 
       - name: Push to Hugging Face Spaces
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          git add README.md
-          git commit -m "ci: add HF Space metadata for deployment" --allow-empty
+          cd /tmp/hf_space
+          git init
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add .
+          git commit -m "ci: sync HF Space files from ${{ github.repository }}@${{ github.sha }}"
           git push \
             https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME} \
             HEAD:main --force
