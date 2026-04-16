@@ -25,5 +25,5 @@ ccxt>=4.3,<5.0
 
 # Data + indicators (pure Python — no C extension required)
 pandas>=2.2,<3.0
-numpy>=1.26,<2.0
+numpy>=1.26
 pandas-ta>=0.3.14b
