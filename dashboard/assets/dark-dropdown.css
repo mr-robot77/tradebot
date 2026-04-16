@@ -4,9 +4,11 @@
  * Forces Dash dcc.Dropdown option menus into dark mode so they remain
  * readable on dark-background deployments (e.g. Hugging Face Spaces).
  *
- * Dash 2.x uses react-select v4/v5; the internal class names for the
- * option list are not affected by the `style=` prop on dcc.Dropdown, so
- * we target them here directly.
+ * This stylesheet targets the older react-select / react-virtualized-select
+ * class names exposed by Dash dcc.Dropdown in this project (for example
+ * `.Select-menu-outer` and `.VirtualizedSelectOption`). These internal
+ * option-list styles are not affected by the `style=` prop on dcc.Dropdown,
+ * so we target them here directly.
  */
 
 /* ── Option menu container ── */
