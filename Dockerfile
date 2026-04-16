@@ -3,7 +3,7 @@
 # The app listens on port 7860 as required by HF Spaces.
 # This file is read automatically when the Space is linked to this repository.
 
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Keep image small and avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive \
